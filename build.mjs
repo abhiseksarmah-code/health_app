@@ -1,12 +1,12 @@
 // Builds the app from src/ into:
 //   www/index.html      – standalone page used by the Android app (Capacitor)
 //   dist/artifact.html  – the same page in claude.ai artifact form
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+//   photos/ is copied next to both
+import { readFileSync, writeFileSync, mkdirSync, cpSync } from "node:fs";
 
-const app = readFileSync("src/app.html", "utf8");
-const anim = readFileSync("src/anim.js", "utf8");
-if (!app.includes("/*ANIM*/")) throw new Error("src/app.html is missing the /*ANIM*/ marker");
-const page = app.replace("/*ANIM*/", () => anim);
+const page = readFileSync("src/app.html", "utf8");
+// exercise photos (public domain, from free-exercise-db) ship next to the page
+for (const out of ["dist/photos", "www/photos"]) cpSync("src/photos", out, { recursive: true, filter: f => !f.endsWith(".json") });
 
 mkdirSync("dist", { recursive: true });
 writeFileSync("dist/artifact.html", page);

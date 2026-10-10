@@ -2,8 +2,8 @@
 
 A home workout and nutrition app for training with a resistance tube.
 
-- **Plan** – a 7-day upper/lower split that trains every muscle group twice a week, with today's session highlighted.
-- **Exercises** – 34 tube exercises by muscle group, each with an animated demo, setup, form cues, reps, and a link to video demos.
+- **Plan** – one muscle group per day (chest, back, legs, shoulders, arms, core, rest), with today's session highlighted.
+- **Exercises** – 33 tube exercises by muscle group, each with start and finish photos, setup, form cues, reps, and a link to video demos.
 - **Nutrition** – log food from a built-in list of ~50 Indian, UAE and gym staples or your own entries, and see protein, carbs and fat against your daily targets. Take a photo of your meal and Claude identifies the foods and estimates the macros.
 
 ## Install on Android
@@ -22,10 +22,14 @@ The Android app recognises meal photos with **Google Gemini (free tier)** by def
 | Path | What it is |
 |---|---|
 | `src/app.html` | The app: markup, styles and logic |
-| `src/anim.js` | Exercise animations (poses for each exercise, drawn on canvas) |
+| `src/photos/` | Exercise photos; `sources.json` lists the original entry for each |
 | `build.mjs` | Builds `www/index.html` (used by the Android app) |
 | `capacitor.config.json` | Android wrapper settings |
 | `.github/workflows/android.yml` | Builds the APK and publishes the release |
 | `signing/debug.keystore` | Signing key so each new APK installs as an update |
 
 Build locally with `npm install && npm run build`, then `npx cap add android && npx cap sync android` and open the `android` folder in Android Studio.
+
+## Credits
+
+Exercise photos are from [free-exercise-db](https://github.com/yuhonas/free-exercise-db) (originally [exercises.json](https://github.com/wrkout/exercises.json)), released into the public domain under the Unlicense. Where no band photo exists, the photo shows the same movement on a cable machine or with dumbbells.

@@ -1,0 +1,233 @@
+{
+ "chest-press": {
+  "src": "Standing_Cable_Chest_Press",
+  "eq": "cable",
+  "name": "Standing Cable Chest Press",
+  "w": 640,
+  "h": 427
+ },
+ "incline-press": {
+  "src": "Incline_Cable_Chest_Press",
+  "eq": "cable",
+  "name": "Incline Cable Chest Press",
+  "w": 427,
+  "h": 640
+ },
+ "chest-fly": {
+  "src": "Cross_Over_-_With_Bands",
+  "eq": "bands",
+  "name": "Cross Over - With Bands",
+  "w": 640,
+  "h": 427
+ },
+ "band-pushup": {
+  "src": "Pushups",
+  "eq": "body only",
+  "name": "Pushups",
+  "w": 640,
+  "h": 427
+ },
+ "crossover": {
+  "src": "Cable_Crossover",
+  "eq": "cable",
+  "name": "Cable Crossover",
+  "w": 640,
+  "h": 427
+ },
+ "seated-row": {
+  "src": "Seated_Cable_Rows",
+  "eq": "cable",
+  "name": "Seated Cable Rows",
+  "w": 640,
+  "h": 427
+ },
+ "bent-row": {
+  "src": "Bent_Over_Two-Dumbbell_Row",
+  "eq": "dumbbell",
+  "name": "Bent Over Two-Dumbbell Row",
+  "w": 640,
+  "h": 427
+ },
+ "lat-pulldown": {
+  "src": "Wide-Grip_Lat_Pulldown",
+  "eq": "cable",
+  "name": "Wide-Grip Lat Pulldown",
+  "w": 640,
+  "h": 427
+ },
+ "straight-arm": {
+  "src": "Straight-Arm_Pulldown",
+  "eq": "cable",
+  "name": "Straight-Arm Pulldown",
+  "w": 640,
+  "h": 427
+ },
+ "pull-apart": {
+  "src": "Band_Pull_Apart",
+  "eq": "bands",
+  "name": "Band Pull Apart",
+  "w": 640,
+  "h": 427
+ },
+ "ohp": {
+  "src": "Shoulder_Press_-_With_Bands",
+  "eq": "bands",
+  "name": "Shoulder Press - With Bands",
+  "w": 640,
+  "h": 427
+ },
+ "lat-raise": {
+  "src": "Lateral_Raise_-_With_Bands",
+  "eq": "bands",
+  "name": "Lateral Raise - With Bands",
+  "w": 640,
+  "h": 427
+ },
+ "front-raise": {
+  "src": "Front_Cable_Raise",
+  "eq": "cable",
+  "name": "Front Cable Raise",
+  "w": 640,
+  "h": 427
+ },
+ "face-pull": {
+  "src": "Face_Pull",
+  "eq": "cable",
+  "name": "Face Pull",
+  "w": 640,
+  "h": 427
+ },
+ "reverse-fly": {
+  "src": "Back_Flyes_-_With_Bands",
+  "eq": "bands",
+  "name": "Back Flyes - With Bands",
+  "w": 640,
+  "h": 427
+ },
+ "curl": {
+  "src": "Standing_Biceps_Cable_Curl",
+  "eq": "cable",
+  "name": "Standing Biceps Cable Curl",
+  "w": 640,
+  "h": 427
+ },
+ "hammer": {
+  "src": "Hammer_Curls",
+  "eq": "dumbbell",
+  "name": "Hammer Curls",
+  "w": 640,
+  "h": 427
+ },
+ "conc-curl": {
+  "src": "Concentration_Curls",
+  "eq": "dumbbell",
+  "name": "Concentration Curls",
+  "w": 640,
+  "h": 427
+ },
+ "pushdown": {
+  "src": "Triceps_Pushdown_-_Rope_Attachment",
+  "eq": "cable",
+  "name": "Triceps Pushdown - Rope Attachment",
+  "w": 640,
+  "h": 427
+ },
+ "oh-ext": {
+  "src": "Speed_Band_Overhead_Triceps",
+  "eq": "bands",
+  "name": "Speed Band Overhead Triceps",
+  "w": 427,
+  "h": 640
+ },
+ "kickback": {
+  "src": "Tricep_Dumbbell_Kickback",
+  "eq": "dumbbell",
+  "name": "Tricep Dumbbell Kickback",
+  "w": 640,
+  "h": 427
+ },
+ "squat": {
+  "src": "Squats_-_With_Bands",
+  "eq": "bands",
+  "name": "Squats - With Bands",
+  "w": 640,
+  "h": 427
+ },
+ "rdl": {
+  "src": "Stiff-Legged_Dumbbell_Deadlift",
+  "eq": "dumbbell",
+  "name": "Stiff-Legged Dumbbell Deadlift",
+  "w": 640,
+  "h": 427
+ },
+ "split-squat": {
+  "src": "Split_Squat_with_Dumbbells",
+  "eq": "dumbbell",
+  "name": "Split Squat with Dumbbells",
+  "w": 427,
+  "h": 640
+ },
+ "glute-bridge": {
+  "src": "Hip_Lift_with_Band",
+  "eq": "bands",
+  "name": "Hip Lift with Band",
+  "w": 640,
+  "h": 427
+ },
+ "lateral-walk": {
+  "src": "Monster_Walk",
+  "eq": "bands",
+  "name": "Monster Walk",
+  "w": 640,
+  "h": 427
+ },
+ "good-morning": {
+  "src": "Band_Good_Morning",
+  "eq": "bands",
+  "name": "Band Good Morning",
+  "w": 640,
+  "h": 427
+ },
+ "calf": {
+  "src": "Calf_Raises_-_With_Bands",
+  "eq": "bands",
+  "name": "Calf Raises - With Bands",
+  "w": 640,
+  "h": 427
+ },
+ "pallof": {
+  "src": "Pallof_Press_With_Rotation",
+  "eq": "cable",
+  "name": "Pallof Press With Rotation",
+  "w": 640,
+  "h": 427
+ },
+ "woodchop": {
+  "src": "Standing_Cable_Wood_Chop",
+  "eq": "cable",
+  "name": "Standing Cable Wood Chop",
+  "w": 427,
+  "h": 640
+ },
+ "kneel-crunch": {
+  "src": "Cable_Crunch",
+  "eq": "cable",
+  "name": "Cable Crunch",
+  "w": 640,
+  "h": 427
+ },
+ "side-plank": {
+  "src": "Side_Bridge",
+  "eq": "body only",
+  "name": "Side Bridge",
+  "w": 640,
+  "h": 427
+ },
+ "reverse-crunch": {
+  "src": "Reverse_Crunch",
+  "eq": "body only",
+  "name": "Reverse Crunch",
+  "w": 640,
+  "h": 427
+ }
+}
