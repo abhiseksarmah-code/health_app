@@ -129,23 +129,8 @@ details summary{cursor:pointer;font-weight:600}
 .status{font-size:.8rem;color:var(--muted)}
 
 /* exercise demos */
-.demo{position:relative;margin:0;width:100%;aspect-ratio:3/2;border-radius:8px;overflow:hidden;background:var(--soft)}
-.demo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
-.demo img.end{animation:swap 3.2s ease-in-out infinite}
-.demo .phase{position:absolute;left:8px;bottom:8px;font-size:.7rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:2px 8px;border-radius:999px;background:rgba(17,19,21,.72);color:#fff}
-.demo .phase.f{animation:swap 3.2s ease-in-out infinite}
-.demo .phase.s{animation:swapout 3.2s ease-in-out infinite}
-@keyframes swap{0%,38%{opacity:0}50%,88%{opacity:1}100%{opacity:0}}
-@keyframes swapout{0%,38%{opacity:1}50%,88%{opacity:0}100%{opacity:1}}
-.sheet .demo-wrap{max-width:420px;width:100%;margin:0 auto}
-.demo-note{font-size:.78rem;color:var(--muted);margin-top:4px}
-@media (prefers-reduced-motion:reduce){
-  .demo{aspect-ratio:3/1}
-  .demo img{width:50%}
-  .demo img.end{left:50%;animation:none;opacity:1}
-  .demo .phase{animation:none}
-  .demo .phase.f{left:calc(50% + 8px);opacity:1}
-}
+.demo{display:block;width:100%;max-width:100%;aspect-ratio:22/17;background:var(--stage);border-radius:8px}
+.sheet .demo{max-width:360px;margin:0 auto}
 .vidlink{font-size:.85rem;font-weight:600;color:var(--accent);text-decoration:none;align-self:flex-start}
 .vidlink:hover{text-decoration:underline}
 
@@ -218,7 +203,7 @@ details summary{cursor:pointer;font-weight:600}
     </div>
     <div>
       <h2 style="margin-bottom:8px">7-day plan</h2>
-      <p class="muted" style="margin-bottom:8px">Each day trains one muscle group with extra sets, so it gets a full week to recover. Tap an exercise for photos, setup and form cues. Every 6th week, do the same plan with a lighter tube to recover.</p>
+      <p class="muted" style="margin-bottom:8px">Each day trains one muscle group with extra sets, so it gets a full week to recover. Tap an exercise for its demo, setup and form cues. Every 6th week, do the same plan with a lighter tube to recover.</p>
       <div class="week" id="week"></div>
     </div>
   </section>
@@ -399,7 +384,7 @@ const EX = [
  {id:"pallof",g:"core",n:"Pallof press",a:"Door anchor at chest height, stand side-on",s:["Hold the handle at your chest, step out until the tube pulls you.","Press straight out and hold 2 seconds without twisting.","Bring it back to your chest. Do all reps, then switch sides."],r:"10 per side",t:2,m:"Obliques, deep core"},
  {id:"woodchop",g:"core",n:"High-to-low woodchop",a:"Door anchor at the top, stand side-on",s:["Hold the handle with both hands above your shoulder.","Rotate and pull diagonally down across your body to the opposite hip.","Return slowly. Pivot the back foot."],r:"12 per side",t:2,m:"Obliques, abs"},
  {id:"kneel-crunch",g:"core",n:"Kneeling crunch",a:"Door anchor at the top, kneel facing the door",s:["Hold the handles beside your head.","Crunch your ribs toward your hips, rounding the spine.","Rise slowly. Don't just sit back on your heels."],r:"12–15",t:2,m:"Abs"},
- {id:"reverse-crunch",g:"core",n:"Reverse crunch",a:"Lie on your back on a mat, no tube needed",s:["Lie flat with knees bent and feet just off the floor, arms by your sides.","Curl your knees toward your chest so your hips lift off the mat.","Lower slowly until your feet almost touch the floor."],r:"12–15",t:0,m:"Lower abs"},
+ {id:"dead-bug",g:"core",n:"Banded dead bug",a:"Lie on your back, door anchor low behind your head",s:["Arms straight up holding the handles, knees at 90°.","Extend one leg long while keeping your lower back pressed down.","Return and switch legs."],r:"10 per side",t:1,m:"Deep core"},
  {id:"side-plank",g:"core",n:"Side plank",a:"Bodyweight, no tube needed",s:["Elbow under shoulder, body in a straight line.","Lift hips and hold.","Make it harder by holding a tube row with the top arm."],r:"30–45 s per side",t:0,m:"Obliques"}
 ];
 const exById = Object.fromEntries(EX.map(e=>[e.id,e]));
@@ -410,7 +395,7 @@ const PLAN = [
  {d:"Wed",f:"Legs & glutes",dur:"50 min",x:[["squat","4 × 12–15"],["rdl","4 × 10–12"],["split-squat","3 × 10 / leg"],["glute-bridge","3 × 15"],["lateral-walk","3 × 12 steps / side"],["calf","4 × 20"]]},
  {d:"Thu",f:"Shoulders",dur:"40 min",x:[["ohp","4 × 10–12"],["lat-raise","4 × 15"],["front-raise","3 × 12"],["reverse-fly","3 × 15"],["face-pull","3 × 15–20"]]},
  {d:"Fri",f:"Arms",dur:"45 min",x:[["curl","4 × 12"],["pushdown","4 × 12–15"],["hammer","3 × 12"],["oh-ext","3 × 12"],["conc-curl","2 × 12 / arm"],["kickback","2 × 15"]]},
- {d:"Sat",f:"Core",dur:"30 min",x:[["pallof","3 × 10 / side"],["woodchop","3 × 12 / side"],["kneel-crunch","3 × 15"],["reverse-crunch","3 × 12–15"],["side-plank","3 × 30 s / side"]]},
+ {d:"Sat",f:"Core",dur:"30 min",x:[["pallof","3 × 10 / side"],["woodchop","3 × 12 / side"],["kneel-crunch","3 × 15"],["dead-bug","3 × 10 / side"],["side-plank","3 × 30 s / side"]]},
  {d:"Sun",f:"Rest",dur:"",notes:["Full rest. Sleep 7–9 hours","An easy walk if you feel like it","Prep protein for the week"]}
 ];
 const DAYFULL = {Mon:"Monday",Tue:"Tuesday",Wed:"Wednesday",Thu:"Thursday",Fri:"Friday",Sat:"Saturday",Sun:"Sunday"};
@@ -429,8 +414,23 @@ function tension(t){
   return w;
 }
 
-/* exercise photos: start and finish positions (public-domain photos from free-exercise-db) */
-const PHOTO_ALT={"chest-press":"a cable machine","incline-press":"a cable machine","chest-fly":"","band-pushup":"","crossover":"a cable machine","seated-row":"a cable machine","bent-row":"dumbbells","lat-pulldown":"a cable machine","straight-arm":"a cable machine","pull-apart":"","ohp":"","lat-raise":"","front-raise":"a cable machine","face-pull":"a cable machine","reverse-fly":"","curl":"a cable machine","hammer":"dumbbells","conc-curl":"dumbbells","pushdown":"a cable machine","oh-ext":"","kickback":"dumbbells","squat":"","rdl":"dumbbells","split-squat":"dumbbells","glute-bridge":"","lateral-walk":"","good-morning":"","calf":"","pallof":"a cable machine","woodchop":"a cable machine","kneel-crunch":"a cable machine","side-plank":"","reverse-crunch":""};
+/*ANIM*/
+/* animation loop: only canvases on screen are drawn */
+const reducedMQ=matchMedia("(prefers-reduced-motion: reduce)");
+const visible=new Set();
+const io=("IntersectionObserver" in window)?new IntersectionObserver(es=>{
+  es.forEach(x=>{ if(x.isIntersecting){visible.add(x.target); if(reducedMQ.matches) paintScene(x.target,x.target.dataset.ex,0,true);} else visible.delete(x.target); });
+}):null;
+function watchDemo(c){ if(io) io.observe(c); else visible.add(c); }
+function frame(ms){
+  if(!reducedMQ.matches) visible.forEach(c=>{ if(c.isConnected) paintScene(c,c.dataset.ex,ms,false); else {visible.delete(c); io&&io.unobserve(c);} });
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+function repaintStatic(){ if(reducedMQ.matches) visible.forEach(c=>paintScene(c,c.dataset.ex,0,true)); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",repaintStatic);
+reducedMQ.addEventListener("change",repaintStatic);
+new MutationObserver(repaintStatic).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
 
 /* plan */
 const todayIdx = (new Date().getDay()+6)%7;
@@ -462,17 +462,11 @@ function renderChips(){
   });
 }
 function videoLink(e){
-  return el("a",{class:"vidlink",href:"https://www.youtube.com/results?search_query="+encodeURIComponent(e.n+" resistance band exercise form"),target:"_blank",rel:"noopener"},"Watch video demos ↗");
+  return el("a",{class:"vidlink",href:"https://www.youtube.com/results?search_query="+encodeURIComponent(e.n+" resistance tube door anchor home workout"),target:"_blank",rel:"noopener"},"Watch video demos ↗");
 }
 function demoCanvas(id){
-  const e=exById[id];
-  const fig=el("figure",{class:"demo"},
-    el("img",{src:"photos/"+id+"-0.jpg",alt:e.n+", start position",loading:"lazy",decoding:"async"}),
-    el("img",{class:"end",src:"photos/"+id+"-1.jpg",alt:e.n+", finish position",loading:"lazy",decoding:"async"}),
-    el("span",{class:"phase s"},"Start"), el("span",{class:"phase f"},"Finish"));
-  const wrap=el("div",{class:"demo-wrap"},fig);
-  if(PHOTO_ALT[id]) wrap.append(el("p",{class:"demo-note"},"Photo shows the same movement with "+PHOTO_ALT[id]+". Use your tube set up as described."));
-  return wrap;
+  const c=el("canvas",{class:"demo","data-ex":id,role:"img","aria-label":"Animated demo of "+exById[id].n});
+  watchDemo(c); return c;
 }
 function exCard(e){
   return el("article",{class:"card"},
