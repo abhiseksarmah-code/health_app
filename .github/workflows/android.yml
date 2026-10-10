@@ -49,15 +49,15 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon
 
       - name: Rename the APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk TubeTrainingLog.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk PersonalFitness.apk
 
       - name: Publish a release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v1.0.${{ github.run_number }}
-          name: Tube Training Log 1.0.${{ github.run_number }}
+          name: Personal Fitness by Abhisek 1.0.${{ github.run_number }}
           make_latest: true
           body: |
-            Download **TubeTrainingLog.apk** below on your Android phone and open it to install.
+            Download **PersonalFitness.apk** below on your Android phone and open it to install.
             If Android asks, allow installs from your browser or file manager.
-          files: TubeTrainingLog.apk
+          files: PersonalFitness.apk

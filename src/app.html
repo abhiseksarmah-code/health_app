@@ -1,4 +1,4 @@
-<title>Tube Training Log</title>
+<title>Personal Fitness by Abhisek</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
 <style>
@@ -6,6 +6,7 @@
 :root{
   --bg:#F2F3F1; --surface:#FFFFFF; --ink:#16191D; --muted:#5D656E; --line:#DCDFDB; --soft:#E8EAE6;
   --accent:#C9382B; --accent-ink:#FFFFFF;
+  --stage:#E3E8E6; --floor:#CBD2CE; --door:#D9C4A5; --door-edge:#A88B66;
   --protein:#2C67A8; --carbs:#B07A0C; --fat:#7547A8; --over:#B42318; --ok:#2E7D4F;
   --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
   --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
@@ -13,10 +14,12 @@
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#111315; --surface:#1A1D20; --ink:#ECEEEB; --muted:#9BA3AB; --line:#2C3035; --soft:#23272B;
   --accent:#EF5E4E; --accent-ink:#111315;
+  --stage:#272C30; --floor:#33393E; --door:#5B4A37; --door-edge:#7E6851;
   --protein:#6FA8E6; --carbs:#E2AE45; --fat:#B391DE; --over:#F27467; --ok:#62C08A; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#111315; --surface:#1A1D20; --ink:#ECEEEB; --muted:#9BA3AB; --line:#2C3035; --soft:#23272B;
   --accent:#EF5E4E; --accent-ink:#111315;
+  --stage:#272C30; --floor:#33393E; --door:#5B4A37; --door-edge:#7E6851;
   --protein:#6FA8E6; --carbs:#E2AE45; --fat:#B391DE; --over:#F27467; --ok:#62C08A; color-scheme:dark}
 
 *{box-sizing:border-box}
@@ -24,6 +27,7 @@ body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15p
 .wrap{max-width:960px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
 h1,h2,h3{font-family:var(--display);font-weight:700;line-height:1.1;margin:0;text-wrap:balance;letter-spacing:.01em}
 h1{font-size:2.1rem;text-transform:uppercase}
+h1 .by{color:var(--accent)}
 h2{font-size:1.5rem;text-transform:uppercase}
 h3{font-size:1.15rem}
 p{margin:0}
@@ -124,7 +128,7 @@ details summary{cursor:pointer;font-weight:600}
 .status{font-size:.8rem;color:var(--muted)}
 
 /* exercise demos */
-.demo{display:block;width:100%;max-width:100%;aspect-ratio:22/17;background:var(--bg);border-radius:8px}
+.demo{display:block;width:100%;max-width:100%;aspect-ratio:22/17;background:var(--stage);border-radius:8px}
 .sheet .demo{max-width:360px;margin:0 auto}
 .vidlink{font-size:.85rem;font-weight:600;color:var(--accent);text-decoration:none;align-self:flex-start}
 .vidlink:hover{text-decoration:underline}
@@ -173,7 +177,7 @@ details summary{cursor:pointer;font-weight:600}
   <header class="top">
     <div>
       <div class="label">Home training · resistance tube</div>
-      <h1>Tube Training Log</h1>
+      <h1>Personal Fitness <span class="by">by Abhisek</span></h1>
     </div>
     <p class="muted">An upper/lower split that hits every muscle group twice a week, plus a food log that tracks protein, carbs and fat against your targets.</p>
   </header>

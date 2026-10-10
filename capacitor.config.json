@@ -1,6 +1,6 @@
 {
   "appId": "com.abhisek.tubetraining",
-  "appName": "Tube Training Log",
+  "appName": "Personal Fitness by Abhisek",
   "webDir": "www",
   "android": {
     "allowMixedContent": false

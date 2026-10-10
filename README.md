@@ -1,4 +1,4 @@
-# Tube Training Log
+# Personal Fitness by Abhisek
 
 A home workout and nutrition app for training with a resistance tube.
 
@@ -9,7 +9,7 @@ A home workout and nutrition app for training with a resistance tube.
 ## Install on Android
 
 1. Open the [latest release](../../releases/latest) on your phone.
-2. Download **TubeTrainingLog.apk** and open it. Allow installs from your browser if Android asks.
+2. Download **PersonalFitness.apk** and open it. Allow installs from your browser if Android asks.
 
 Every push to `main` builds a new APK with GitHub Actions and publishes it as a release. New versions install over the old one and keep your food log.
 
