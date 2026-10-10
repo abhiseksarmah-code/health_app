@@ -15,7 +15,7 @@ Every push to `main` builds a new APK with GitHub Actions and publishes it as a 
 
 ## Photo recognition
 
-The Android app sends meal photos to Claude with your own Anthropic API key. Add it under **Nutrition → Photo recognition setup**. The key is stored only on your phone. Without a key you can still log food by searching the list.
+The Android app recognises meal photos with **Google Gemini (free tier)** by default: get a free key at aistudio.google.com (no card needed) and add it under **Nutrition → Photo recognition setup**. You can switch to Anthropic Claude with a paid API key instead. Keys are stored only on your phone. Without a key you can still log food by searching the list.
 
 ## Project layout
 

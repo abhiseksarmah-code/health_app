@@ -250,6 +250,7 @@ details summary{cursor:pointer;font-weight:600}
         <button class="btn ghost" type="button" id="pickBtn">Choose a photo</button>
         <input type="file" id="snapInput" accept="image/*" capture="environment" hidden>
         <input type="file" id="pickInput" accept="image/*" hidden>
+        <button class="linkbtn" type="button" id="setupLink" hidden>Set up photo recognition</button>
         <span class="status" id="photoHint"></span>
       </div>
       <div class="photo-box" id="photoBox" hidden>
@@ -316,12 +317,19 @@ details summary{cursor:pointer;font-weight:600}
       </details>
     </div>
     <div class="panel" id="keyPanel" hidden>
-      <details>
+      <details id="keyDetails">
         <summary>Photo recognition setup</summary>
-        <div class="stack" style="gap:8px;margin-top:12px">
-          <p class="muted" style="font-size:.9rem">To identify foods from photos, this app sends the photo to Claude using your own Anthropic API key. Create one at console.anthropic.com. The key stays on this phone only.</p>
+        <div class="stack" style="gap:10px;margin-top:12px">
+          <div class="field" style="max-width:320px">
+            <label class="label" for="provider">Recognise photos with</label>
+            <select id="provider">
+              <option value="gemini">Google Gemini (free tier)</option>
+              <option value="claude">Anthropic Claude (paid API)</option>
+            </select>
+          </div>
+          <p class="muted" style="font-size:.9rem" id="keyHelp"></p>
           <div class="keyrow">
-            <div class="field"><label class="label" for="apiKey">Anthropic API key</label><input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-…"></div>
+            <div class="field"><label class="label" for="apiKey" id="keyLabel">API key</label><input id="apiKey" type="password" autocomplete="off"></div>
             <button class="btn" type="button" id="saveKey">Save key</button>
             <button class="btn ghost" type="button" id="testKey">Test key</button>
             <button class="btn ghost" type="button" id="clearKey">Remove</button>
@@ -923,20 +931,48 @@ let sampleFn=null, sampleImages=false, sampleKnown=false, photoCtl=null;
 const IN_CLAUDE=!!(window.claude&&window.claude.use);
 const photoBox=document.getElementById("photoBox"), photoBody=document.getElementById("photoBody"), photoImg=document.getElementById("photoImg"), photoHint=document.getElementById("photoHint");
 const keyPanel=document.getElementById("keyPanel"), keyIn=document.getElementById("apiKey"), keyStatus=document.getElementById("keyStatus");
-const getKey=()=>{ try{ return localStorage.getItem("tf-anthropic-key")||""; }catch(e){ return ""; } };
+const PROVIDERS={
+  gemini:{store:"tf-gemini-key",label:"Google Gemini API key",placeholder:"AIza…",
+    help:"Free: go to aistudio.google.com, sign in with your Google account and tap Get API key, then Create API key. No card needed. Free use has a daily limit. The key stays on this phone only.",
+    looksOk:v=>v.length>=30&&!/\s/.test(v), hint:"That doesn't look like a Gemini key. Copy the whole key from Google AI Studio; it usually starts with AIza."},
+  claude:{store:"tf-anthropic-key",label:"Anthropic API key",placeholder:"sk-ant-…",
+    help:"Paid: create a key at console.anthropic.com under API Keys and add a little credit under Billing. Each photo costs about a cent. The key stays on this phone only.",
+    looksOk:v=>v.startsWith("sk-"), hint:"That doesn't look like an Anthropic key. It starts with sk-ant-."}
+};
+const lsRead=k=>{ try{ return localStorage.getItem(k)||""; }catch(e){ return ""; } };
+const getProvider=()=>{ const p=lsRead("tf-provider"); return PROVIDERS[p]?p:"gemini"; };
+const getKey=(p=getProvider())=>lsRead(PROVIDERS[p].store);
+const providerSel=document.getElementById("provider"), setupLink=document.getElementById("setupLink");
 function refreshKeyUI(){
   // the key option is only for the standalone app; inside Claude the page asks Claude directly
   keyPanel.hidden = IN_CLAUDE;
+  const p=getProvider(), cfg=PROVIDERS[p];
+  providerSel.value=p;
+  document.getElementById("keyLabel").textContent=cfg.label;
+  keyIn.placeholder=cfg.placeholder;
+  document.getElementById("keyHelp").textContent=cfg.help;
   keyStatus.textContent = getKey()? "Key saved on this device." : "No key saved yet.";
+  setupLink.hidden = IN_CLAUDE || !!getKey();
 }
-document.getElementById("saveKey").onclick=()=>{ const v=keyIn.value.trim(); if(!v.startsWith("sk-")){ keyStatus.textContent="That doesn't look like an Anthropic key. It starts with sk-ant-."; return; } try{ localStorage.setItem("tf-anthropic-key",v); }catch(e){} keyIn.value=""; refreshKeyUI(); };
-document.getElementById("testKey").onclick=async()=>{
-  const key=getKey(); if(!key){ keyStatus.textContent="Save a key first, then test it."; return; }
-  keyStatus.textContent="Testing…";
-  try{ await callClaudeAPI(key,[{type:"text",text:"Reply with the single word OK."}],undefined,10); keyStatus.textContent="Key works. Photo recognition is ready."; }
-  catch(e){ keyStatus.textContent=(e&&PHOTO_ERRORS[e.code])||(e&&e.detail)||"The test failed. Check your internet connection."; }
+function openSetup(){ keyPanel.hidden=false; document.getElementById("keyDetails").open=true; keyPanel.scrollIntoView({behavior:"smooth",block:"center"}); }
+setupLink.onclick=openSetup;
+providerSel.onchange=()=>{ try{ localStorage.setItem("tf-provider",providerSel.value); }catch(e){} keyIn.value=""; refreshKeyUI(); };
+document.getElementById("saveKey").onclick=()=>{
+  const p=getProvider(), v=keyIn.value.trim();
+  if(!PROVIDERS[p].looksOk(v)){ keyStatus.textContent=PROVIDERS[p].hint; return; }
+  try{ localStorage.setItem(PROVIDERS[p].store,v); }catch(e){}
+  keyIn.value=""; refreshKeyUI(); keyStatus.textContent="Key saved. Tap Test key to check it.";
 };
-document.getElementById("clearKey").onclick=()=>{ try{ localStorage.removeItem("tf-anthropic-key"); }catch(e){} refreshKeyUI(); };
+document.getElementById("testKey").onclick=async()=>{
+  const p=getProvider(), key=getKey(p); if(!key){ keyStatus.textContent="Save a key first, then test it."; return; }
+  keyStatus.textContent="Testing…";
+  try{
+    if(p==="gemini") await callGeminiAPI(key,[{text:"Reply with the single word OK."}],undefined,false);
+    else await callClaudeAPI(key,[{type:"text",text:"Reply with the single word OK."}],undefined,10);
+    keyStatus.textContent="Key works. Photo recognition is ready.";
+  }catch(e){ keyStatus.textContent=(e&&PHOTO_ERRORS[e.code])||(e&&e.detail)||"The test failed. Check your internet connection."; }
+};
+document.getElementById("clearKey").onclick=()=>{ try{ localStorage.removeItem(PROVIDERS[getProvider()].store); }catch(e){} refreshKeyUI(); };
 refreshKeyUI();
 
 const snapInput=document.getElementById("snapInput"), pickInput=document.getElementById("pickInput");
@@ -988,19 +1024,55 @@ async function callClaudeAPI(key,content,signal,maxTokens){
   if(/credit balance/i.test(m)) throw {code:"no_credit",detail:m};
   throw {code:"api_error",detail:"Anthropic said: "+m+" (error "+st+")"};
 }
+// Gemini models to try, newest first; a model that isn't on this key's free tier is skipped
+const GEMINI_MODELS=["gemini-3.8-flash","gemini-3.5-flash-lite","gemini-3.6-flash","gemini-2.5-flash"];
+async function callGeminiAPI(key,parts,signal,json){
+  let last=null;
+  for(const model of GEMINI_MODELS){
+    let r;
+    const body={contents:[{role:"user",parts}]};
+    if(json) body.generationConfig={response_mime_type:"application/json"};
+    try{
+      r=await fetch("https://generativelanguage.googleapis.com/v1beta/models/"+model+":generateContent",{method:"POST",signal,headers:{"content-type":"application/json","x-goog-api-key":key},body:JSON.stringify(body)});
+    }catch(e){
+      if(e&&e.name==="AbortError") throw e;
+      throw {code:"network",detail:"Couldn't reach Google. Check your internet connection."};
+    }
+    let j=null; try{ j=await r.json(); }catch(e){}
+    if(r.ok){
+      const cand=j&&j.candidates&&j.candidates[0];
+      if(!cand){ const why=j&&j.promptFeedback&&j.promptFeedback.blockReason; throw {code:"api_error",detail:"Gemini didn't answer"+(why?" ("+why+")":"")+". Try another photo."}; }
+      return ((cand.content&&cand.content.parts)||[]).filter(x=>x.text&&!x.thought).map(x=>x.text).join("");
+    }
+    const err=(j&&j.error)||{}, msg=err.message||("HTTP "+r.status), st=err.status||"";
+    last={status:r.status,msg,st};
+    // try the next model when this one doesn't exist or has no free quota on this key
+    if(r.status===404||(r.status===429&&/limit: 0|free_tier/i.test(msg))) continue;
+    break;
+  }
+  const {status,msg,st}=last;
+  if(/API_KEY_INVALID|API key not valid/i.test(msg)||status===401||status===403) throw {code:"bad_key",detail:msg};
+  if(status===429) throw {code:"quota",detail:msg};
+  if(/location is not supported/i.test(msg)) throw {code:"region",detail:msg};
+  throw {code:"api_error",detail:"Google said: "+msg+" (error "+status+(st?" "+st:"")+")"};
+}
 async function recognise(blob,signal){
   if(sampleFn&&sampleImages){
     return await sampleFn.json(PHOTO_PROMPT,{images:[blob],signal,cache:false});
   }
   if(IN_CLAUDE) throw {code: sampleKnown?"no_sample":"not_ready"};
-  const key=getKey();
+  const p=getProvider(), key=getKey(p);
   if(!key) throw {code:"no_recogniser"};
   const data=await blobToB64(blob);
-  const text=await callClaudeAPI(key,[{type:"image",source:{type:"base64",media_type:"image/jpeg",data}},{type:"text",text:PHOTO_PROMPT}],signal,1500);
+  const text = p==="gemini"
+    ? await callGeminiAPI(key,[{inline_data:{mime_type:"image/jpeg",data}},{text:PHOTO_PROMPT}],signal,true)
+    : await callClaudeAPI(key,[{type:"image",source:{type:"base64",media_type:"image/jpeg",data}},{type:"text",text:PHOTO_PROMPT}],signal,1500);
   try{ return parseJSON(text); }catch(e){ throw {code:"invalid_json"}; }
 }
 const PHOTO_ERRORS={
   bad_key:"Your API key was rejected. Check it in Photo recognition setup below.",
+  quota:"You've used today's free Gemini allowance. Try again later, or log this meal from the food list.",
+  region:"Google doesn't offer the Gemini API in your current location. Switch to Claude in Photo recognition setup.",
   no_credit:"Your Anthropic account has no credit left. Add credit at console.anthropic.com under Billing, then try again.",
   bad_image:"This photo's format couldn't be read. Try taking the photo again, or set your camera to save JPEG instead of HEIF/HEIC.",
   rate_limited:"Too many requests right now. Try again in a minute.",
@@ -1011,7 +1083,7 @@ const PHOTO_ERRORS={
   no_sample:"Photo recognition isn't available here, so add the foods with the search box above.",
   not_ready:"Still connecting to Claude. Try again in a few seconds.",
   invalid_json:"The answer came back in the wrong format. Try again.",
-  no_recogniser:"Add your Anthropic API key in Photo recognition setup below to identify foods from photos. Until then, add the foods with the search box above."
+  no_recogniser:"To identify foods from photos, add a free Google Gemini key in Photo recognition setup below. It takes about a minute. Until then, add the foods with the search box."
 };
 
 async function handlePhoto(file){
@@ -1032,7 +1104,7 @@ async function handlePhoto(file){
   }catch(e){
     if(ctl!==photoCtl) return;
     if(e&&(e.code==="cancelled"||e.name==="AbortError")){ closePhoto(); return; }
-    if(e&&e.code==="no_recogniser"){ keyPanel.hidden=false; keyPanel.querySelector("details").open=true; }
+    if(e&&e.code==="no_recogniser") openSetup();
     photoBody.innerHTML="";
     const msg=(e&&PHOTO_ERRORS[e.code])||(e&&e.detail)||"Something went wrong while analysing the photo. Try again.";
     photoBody.append(el("p",{},msg));
