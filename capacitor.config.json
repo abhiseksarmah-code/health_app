@@ -1,0 +1,8 @@
+{
+  "appId": "com.abhisek.tubetraining",
+  "appName": "Tube Training Log",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}

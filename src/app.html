@@ -1,0 +1,868 @@
+<title>Tube Training Log</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+/* Layout: one-column app shell, sticky tab bar, cards only for exercises and log panels */
+:root{
+  --bg:#F2F3F1; --surface:#FFFFFF; --ink:#16191D; --muted:#5D656E; --line:#DCDFDB; --soft:#E8EAE6;
+  --accent:#C9382B; --accent-ink:#FFFFFF;
+  --protein:#2C67A8; --carbs:#B07A0C; --fat:#7547A8; --over:#B42318; --ok:#2E7D4F;
+  --display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#111315; --surface:#1A1D20; --ink:#ECEEEB; --muted:#9BA3AB; --line:#2C3035; --soft:#23272B;
+  --accent:#EF5E4E; --accent-ink:#111315;
+  --protein:#6FA8E6; --carbs:#E2AE45; --fat:#B391DE; --over:#F27467; --ok:#62C08A; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#111315; --surface:#1A1D20; --ink:#ECEEEB; --muted:#9BA3AB; --line:#2C3035; --soft:#23272B;
+  --accent:#EF5E4E; --accent-ink:#111315;
+  --protein:#6FA8E6; --carbs:#E2AE45; --fat:#B391DE; --over:#F27467; --ok:#62C08A; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5}
+.wrap{max-width:960px;margin:0 auto;padding-inline:16px;padding-block:20px 48px}
+h1,h2,h3{font-family:var(--display);font-weight:700;line-height:1.1;margin:0;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:2.1rem;text-transform:uppercase}
+h2{font-size:1.5rem;text-transform:uppercase}
+h3{font-size:1.15rem}
+p{margin:0}
+.muted{color:var(--muted)}
+.num{font-variant-numeric:tabular-nums}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);font-weight:600}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:8px 16px;margin-bottom:14px}
+header.top p{max-width:46ch}
+
+.tabs{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:20px;padding-top:4px}
+.tab{background:none;border:0;padding:10px 14px;font-family:var(--display);font-size:1.1rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+
+.stack{display:flex;flex-direction:column;gap:20px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px}
+
+/* tension meter */
+.tension{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;color:var(--muted);white-space:nowrap}
+.tension i{display:inline-block;width:5px;height:12px;border-radius:1px;background:var(--soft);border:1px solid var(--line)}
+.tension i.on{background:var(--accent);border-color:var(--accent)}
+
+/* plan */
+.rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px 20px}
+.rules div{min-width:0}
+.rules b{display:block;font-family:var(--display);font-size:1.05rem;text-transform:uppercase;letter-spacing:.03em}
+.week{display:flex;flex-direction:column;border-top:1px solid var(--line)}
+.day{display:grid;grid-template-columns:96px 1fr;gap:16px;padding:16px 0;border-bottom:1px solid var(--line)}
+.day.today{background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 9%,transparent),transparent 70%);margin-inline:-16px;padding-inline:16px;border-radius:6px}
+.dayname{font-family:var(--display);font-size:1.6rem;font-weight:700;text-transform:uppercase;line-height:1}
+.dayname small{display:block;font-family:var(--body);font-size:.72rem;font-weight:600;letter-spacing:.09em;color:var(--accent);margin-top:6px}
+.daybody{min-width:0;display:flex;flex-direction:column;gap:8px}
+.focus{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
+.focus span{font-size:.85rem;color:var(--muted)}
+.exlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+.exlist li{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:6px 0;border-top:1px dashed var(--line)}
+.exlist li:first-child{border-top:0}
+.exbtn{background:none;border:0;padding:0;text-align:left;cursor:pointer;color:var(--ink);font-weight:500;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+.exbtn:hover{text-decoration-color:var(--accent)}
+.sets{font-variant-numeric:tabular-nums;font-weight:600;white-space:nowrap}
+.notes{margin:0;padding-left:18px;color:var(--muted)}
+
+/* exercises library */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;cursor:pointer;font-weight:500}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:14px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.card .row{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.setup{font-size:.85rem;background:var(--soft);border-radius:6px;padding:6px 10px}
+.card ol{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px}
+.meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.85rem;color:var(--muted);margin-top:auto;padding-top:4px;border-top:1px solid var(--line)}
+.meta b{color:var(--ink);font-weight:600}
+
+/* nutrition */
+.daynav{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.iconbtn{border:1px solid var(--line);background:var(--surface);border-radius:8px;width:36px;height:36px;cursor:pointer;font-size:1.1rem;line-height:1}
+.daynav .date{font-family:var(--display);font-size:1.35rem;font-weight:700;text-transform:uppercase;min-width:11ch;text-align:center}
+.summary{display:grid;grid-template-columns:minmax(150px,200px) 1fr;gap:20px;align-items:center}
+.kcal{display:flex;flex-direction:column;gap:2px}
+.kcal .big{font-family:var(--display);font-size:3rem;font-weight:700;line-height:1}
+.bars{display:flex;flex-direction:column;gap:12px;min-width:0}
+.bar-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap}
+.bar-head b{font-weight:600}
+.track{height:10px;background:var(--soft);border-radius:999px;overflow:hidden;margin-top:4px}
+.fill{height:100%;border-radius:999px;transition:width .3s}
+.left{font-size:.85rem;font-weight:600}
+.left.over{color:var(--over)}
+.left.done{color:var(--ok)}
+
+form.add{display:grid;grid-template-columns:2fr 90px 130px auto;gap:8px;align-items:end}
+.field{display:flex;flex-direction:column;gap:4px;min-width:0}
+.field input,.field select{border:1px solid var(--line);background:var(--bg);border-radius:8px;padding:8px 10px;width:100%;min-width:0}
+.btn{border:0;background:var(--accent);color:var(--accent-ink);border-radius:8px;padding:9px 16px;font-weight:600;cursor:pointer;white-space:nowrap}
+.btn.ghost{background:none;color:var(--ink);border:1px solid var(--line)}
+.preview{font-size:.85rem;color:var(--muted);min-height:1.3em}
+.linkbtn{background:none;border:0;padding:0;color:var(--accent);font-weight:600;cursor:pointer}
+form.custom{display:grid;grid-template-columns:2fr repeat(3,1fr) auto;gap:8px;align-items:end}
+
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th,td{padding:8px 6px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:140px}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+tfoot td{font-weight:700;border-bottom:0}
+td .sub{display:block;font-size:.8rem;color:var(--muted)}
+.del{background:none;border:0;color:var(--muted);cursor:pointer;font-size:1rem;padding:2px 6px}
+.del:hover{color:var(--over)}
+.empty{padding:18px 0;color:var(--muted)}
+.empty .chips{margin-top:10px}
+
+.targets{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;align-items:end}
+.calc{display:grid;grid-template-columns:repeat(3,1fr) auto;gap:8px;align-items:end;margin-top:10px}
+details summary{cursor:pointer;font-weight:600}
+.dot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:6px}
+.status{font-size:.8rem;color:var(--muted)}
+
+/* exercise demos */
+.demo{display:block;width:100%;max-width:100%;aspect-ratio:22/17;background:var(--bg);border-radius:8px}
+.sheet .demo{max-width:360px;margin:0 auto}
+.vidlink{font-size:.85rem;font-weight:600;color:var(--accent);text-decoration:none;align-self:flex-start}
+.vidlink:hover{text-decoration:underline}
+
+/* photo capture */
+.photo-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.photo-box{display:grid;grid-template-columns:120px 1fr;gap:14px;align-items:start;border-top:1px solid var(--line);padding-top:12px}
+.photo-box img{width:120px;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--line)}
+.photo-body{min-width:0;display:flex;flex-direction:column;gap:8px}
+.det{display:grid;grid-template-columns:auto 1fr repeat(3,64px);gap:6px;align-items:center}
+.det input[type=text],.det input[type=number]{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:5px 6px;width:100%;min-width:0}
+.det .portion{grid-column:2/-1;font-size:.8rem;color:var(--muted);margin-top:-4px}
+.det-head{font-size:.7rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.spin{display:inline-block;width:14px;height:14px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin 1s linear infinite;vertical-align:-2px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+/* modal */
+.overlay{position:fixed;inset:0;background:color-mix(in srgb,#000 45%,transparent);display:flex;align-items:center;justify-content:center;padding:16px;z-index:20}
+.sheet{background:var(--surface);border:1px solid var(--line);border-radius:12px;max-width:440px;width:100%;padding:18px;display:flex;flex-direction:column;gap:10px;max-height:90vh;overflow:auto}
+
+@media (max-width:640px){
+  h1{font-size:1.75rem}
+  .day{grid-template-columns:1fr;gap:8px}
+  .dayname{display:flex;align-items:baseline;gap:10px}
+  .dayname small{margin-top:0}
+  .summary{grid-template-columns:1fr}
+  form.add{grid-template-columns:1fr 1fr}
+  form.add .field:first-child{grid-column:1/-1}
+  form.add .btn{grid-column:1/-1}
+  form.custom{grid-template-columns:repeat(3,1fr)}
+  form.custom .field:first-child,form.custom .btn{grid-column:1/-1}
+  .targets{grid-template-columns:repeat(3,1fr)}
+  .targets .kc{grid-column:1/-1}
+  .calc{grid-template-columns:1fr 1fr}
+  .calc .btn{grid-column:1/-1}
+  .tab{padding:10px 10px;font-size:1rem}
+  .photo-box{grid-template-columns:1fr}
+  .photo-box img{width:100%;height:160px}
+  .det{grid-template-columns:auto 1fr repeat(3,52px)}
+}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="label">Home training · resistance tube</div>
+      <h1>Tube Training Log</h1>
+    </div>
+    <p class="muted">An upper/lower split that hits every muscle group twice a week, plus a food log that tracks protein, carbs and fat against your targets.</p>
+  </header>
+
+  <nav class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-plan" aria-controls="view-plan" aria-selected="true">Plan</button>
+    <button class="tab" role="tab" id="tab-ex" aria-controls="view-ex" aria-selected="false">Exercises</button>
+    <button class="tab" role="tab" id="tab-food" aria-controls="view-food" aria-selected="false">Nutrition</button>
+  </nav>
+
+  <!-- PLAN -->
+  <section id="view-plan" role="tabpanel" class="stack">
+    <div class="panel">
+      <div class="rules">
+        <div><b>Warm up 5 min</b><span class="muted">Arm circles, bodyweight squats, light band pull-aparts.</span></div>
+        <div><b>Effort</b><span class="muted">Stop each set 1–3 reps short of failure, with clean form.</span></div>
+        <div><b>Tempo &amp; rest</b><span class="muted">2 s on the way back, 1 s squeeze. Rest 60–90 s between sets.</span></div>
+        <div><b>Progress weekly</b><span class="muted">Hit the top of the rep range on every set? Step further from the anchor, shorten your grip, or switch to a heavier tube.</span></div>
+      </div>
+    </div>
+    <div>
+      <h2 style="margin-bottom:8px">7-day plan</h2>
+      <p class="muted" style="margin-bottom:8px">Tap an exercise for setup and form cues. Every 6th week, do the same plan with a lighter tube to recover.</p>
+      <div class="week" id="week"></div>
+    </div>
+  </section>
+
+  <!-- EXERCISES -->
+  <section id="view-ex" role="tabpanel" class="stack" hidden>
+    <div class="chips" id="groupChips"></div>
+    <div class="grid" id="exGrid"></div>
+  </section>
+
+  <!-- NUTRITION -->
+  <section id="view-food" role="tabpanel" class="stack" hidden>
+    <div class="daynav">
+      <button class="iconbtn" id="prevDay" aria-label="Previous day">‹</button>
+      <div class="date" id="dateLabel"></div>
+      <button class="iconbtn" id="nextDay" aria-label="Next day">›</button>
+      <button class="btn ghost" id="todayBtn">Today</button>
+      <span class="status" id="syncStatus"></span>
+    </div>
+
+    <div class="panel summary">
+      <div class="kcal">
+        <span class="label">Calories eaten</span>
+        <span class="big num" id="kcalEaten">0</span>
+        <span class="muted num" id="kcalTarget"></span>
+      </div>
+      <div class="bars" id="bars"></div>
+    </div>
+
+    <div class="panel stack" style="gap:12px">
+      <h3>Add food</h3>
+      <div class="photo-actions">
+        <button class="btn" type="button" id="snapBtn">Take a photo of your meal</button>
+        <button class="btn ghost" type="button" id="pickBtn">Choose a photo</button>
+        <input type="file" id="snapInput" accept="image/*" capture="environment" hidden>
+        <input type="file" id="pickInput" accept="image/*" hidden>
+        <span class="status" id="photoHint"></span>
+      </div>
+      <div class="photo-box" id="photoBox" hidden>
+        <img id="photoImg" alt="Your meal photo">
+        <div class="photo-body" id="photoBody"></div>
+      </div>
+      <p class="label" style="margin-top:4px">Or search the food list</p>
+      <form class="add" id="addForm" autocomplete="off">
+        <div class="field">
+          <label class="label" for="foodName">Food</label>
+          <input id="foodName" list="foodList" placeholder="Start typing: egg, dal, chicken…">
+          <datalist id="foodList"></datalist>
+        </div>
+        <div class="field">
+          <label class="label" for="foodQty">Amount</label>
+          <input id="foodQty" type="number" min="0" step="any" value="1">
+        </div>
+        <div class="field">
+          <label class="label" for="foodUnit">Unit</label>
+          <select id="foodUnit"><option value="serving">serving</option><option value="g">grams</option></select>
+        </div>
+        <button class="btn" type="submit">Add</button>
+      </form>
+      <div class="preview" id="preview"></div>
+      <details id="customBox">
+        <summary>Not in the list? Add your own food with its macros</summary>
+        <form class="custom" id="customForm" style="margin-top:10px" autocomplete="off">
+          <div class="field"><label class="label" for="cName">Name &amp; portion</label><input id="cName" placeholder="e.g. Protein bar (1 bar)"></div>
+          <div class="field"><label class="label" for="cP">Protein g</label><input id="cP" type="number" min="0" step="any"></div>
+          <div class="field"><label class="label" for="cC">Carbs g</label><input id="cC" type="number" min="0" step="any"></div>
+          <div class="field"><label class="label" for="cF">Fat g</label><input id="cF" type="number" min="0" step="any"></div>
+          <button class="btn" type="submit">Add</button>
+        </form>
+        <p class="muted" style="font-size:.85rem;margin-top:6px">Calories are calculated as 4 kcal per gram of protein and carbs, 9 per gram of fat. Copy the numbers from the packet label.</p>
+      </details>
+    </div>
+
+    <div class="panel">
+      <h3 style="margin-bottom:6px">Today's log</h3>
+      <div id="logBox"></div>
+    </div>
+
+    <div class="panel">
+      <details id="targetBox">
+        <summary>Daily targets</summary>
+        <div class="stack" style="gap:6px;margin-top:12px">
+          <div class="targets">
+            <div class="field"><label class="label" for="tP">Protein g</label><input id="tP" type="number" min="0"></div>
+            <div class="field"><label class="label" for="tC">Carbs g</label><input id="tC" type="number" min="0"></div>
+            <div class="field"><label class="label" for="tF">Fat g</label><input id="tF" type="number" min="0"></div>
+            <div class="field kc"><span class="label">Calories</span><span class="num" id="tK" style="padding:8px 0;font-weight:600"></span></div>
+          </div>
+          <p class="label" style="margin-top:14px">Estimate from body weight</p>
+          <div class="calc">
+            <div class="field"><label class="label" for="wKg">Weight kg</label><input id="wKg" type="number" min="30" value="75"></div>
+            <div class="field"><label class="label" for="goal">Goal</label>
+              <select id="goal"><option value="lose">Lose fat</option><option value="keep" selected>Recomp / maintain</option><option value="gain">Build muscle</option></select></div>
+            <div class="field"><label class="label" for="act">Daily activity</label>
+              <select id="act"><option value="30">Mostly sitting</option><option value="33" selected>Moderate</option><option value="36">Very active</option></select></div>
+            <button class="btn ghost" id="calcBtn" type="button">Use estimate</button>
+          </div>
+          <p class="muted" style="font-size:.85rem">Rough starting point: protein 1.8–2.0 g per kg, fat 0.8 g per kg, carbs fill the rest. Adjust after 2–3 weeks based on your weight trend.</p>
+        </div>
+      </details>
+    </div>
+    <div class="panel" id="keyPanel" hidden>
+      <details>
+        <summary>Photo recognition setup</summary>
+        <div class="stack" style="gap:8px;margin-top:12px">
+          <p class="muted" style="font-size:.9rem">To identify foods from photos, this app sends the photo to Claude using your own Anthropic API key. Create one at console.anthropic.com. The key stays on this phone only.</p>
+          <div class="calc" style="grid-template-columns:1fr auto auto;margin-top:0">
+            <div class="field"><label class="label" for="apiKey">Anthropic API key</label><input id="apiKey" type="password" autocomplete="off" placeholder="sk-ant-…"></div>
+            <button class="btn" type="button" id="saveKey">Save key</button>
+            <button class="btn ghost" type="button" id="clearKey">Remove</button>
+          </div>
+          <span class="status" id="keyStatus"></span>
+        </div>
+      </details>
+    </div>
+    <p class="muted" style="font-size:.8rem">Food values are typical averages per the portion shown. Packaged foods vary, so use the label when you have it.</p>
+  </section>
+</div>
+
+<div class="overlay" id="overlay" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="row" style="display:flex;justify-content:space-between;gap:10px;align-items:flex-start">
+      <div><div class="label" id="mGroup"></div><h2 id="mTitle"></h2></div>
+      <button class="iconbtn" id="mClose" aria-label="Close">×</button>
+    </div>
+    <div id="mBody" class="stack" style="gap:10px"></div>
+  </div>
+</div>
+
+<script>
+/* ---------- exercise library ---------- */
+const GROUPS = {chest:"Chest",back:"Back",shoulders:"Shoulders",biceps:"Biceps",triceps:"Triceps",legs:"Legs & glutes",core:"Core"};
+const EX = [
+ // chest
+ {id:"chest-press",g:"chest",n:"Standing chest press",a:"Door anchor at chest height, face away",s:["Stagger your feet and step forward until the tube is taut.","Press both handles straight ahead until your arms are almost straight.","Return slowly until hands are beside your chest, elbows about 45° from your body."],r:"10–15",t:2,m:"Chest, front delts, triceps"},
+ {id:"incline-press",g:"chest",n:"Incline press",a:"Door anchor low, face away",s:["Stagger stance, handles at chest level.","Press up and forward at about 45°, like an incline bench.","Lower under control. Keep ribs down, don't arch."],r:"10–15",t:2,m:"Upper chest, front delts"},
+ {id:"chest-fly",g:"chest",n:"Standing fly",a:"Door anchor at chest height, face away",s:["Arms open wide with a soft bend in the elbows.","Bring the handles together in front of you in a hugging arc.","Let your arms open slowly until you feel a stretch across the chest."],r:"12–15",t:1,m:"Chest"},
+ {id:"band-pushup",g:"chest",n:"Banded push-up",a:"Tube across your upper back, a handle under each palm",s:["Set up in a push-up position; the tube should be taut at the top.","Lower your chest to a fist's height above the floor.","Push up hard. Drop to your knees to keep form if needed."],r:"8–15",t:2,m:"Chest, triceps, core"},
+ {id:"crossover",g:"chest",n:"High-to-low crossover",a:"Door anchor at the top, face away",s:["Lean slightly forward, arms high and wide.","Sweep the handles down and across to meet in front of your hips.","Return slowly to the start."],r:"12–15",t:1,m:"Lower chest"},
+ // back
+ {id:"seated-row",g:"back",n:"Seated row",a:"Sit with legs straight, tube looped around your feet",s:["Sit tall, arms straight, shoulders down.","Pull handles to your lower ribs, squeezing shoulder blades together.","Reach forward slowly without rounding your back."],r:"10–15",t:2,m:"Mid back, lats, biceps"},
+ {id:"bent-row",g:"back",n:"Bent-over row",a:"Stand on the tube, feet hip-width",s:["Hinge at the hips until your torso is about 45°, back flat.","Row the handles to your hips, elbows close to your sides.","Lower slowly. Cross the tube into an X for more resistance."],r:"10–12",t:3,m:"Lats, mid back, rear delts"},
+ {id:"lat-pulldown",g:"back",n:"Kneeling lat pulldown",a:"Door anchor at the top, kneel facing the door",s:["Kneel far enough back that arms are straight overhead with tension.","Pull elbows down toward your back pockets, chest up.","Let the arms rise slowly to a full stretch."],r:"10–15",t:2,m:"Lats, biceps"},
+ {id:"straight-arm",g:"back",n:"Straight-arm pulldown",a:"Door anchor at the top, face the door",s:["Step back, hinge slightly, arms straight and up at eye level.","Sweep the handles down to your thighs keeping elbows locked.","Return slowly to eye level."],r:"12–15",t:1,m:"Lats"},
+ {id:"pull-apart",g:"back",n:"Band pull-apart",a:"Hold the tube near the middle, hands shoulder-width",s:["Arms straight out in front at shoulder height.","Pull the tube apart until it touches your chest.","Return slowly. Great as a warm-up too."],r:"15–20",t:1,m:"Upper back, rear delts"},
+ // shoulders
+ {id:"ohp",g:"shoulders",n:"Overhead press",a:"Stand on the tube, handles at shoulders",s:["Brace your core and squeeze your glutes.","Press the handles straight up until arms are by your ears.","Lower slowly to shoulder height."],r:"10–12",t:2,m:"Shoulders, triceps"},
+ {id:"lat-raise",g:"shoulders",n:"Lateral raise",a:"Stand on the tube, handles by your sides",s:["Slight bend in the elbows, lean a touch forward.","Raise arms out to the side up to shoulder height.","Lower over 2–3 seconds."],r:"12–20",t:1,m:"Side delts"},
+ {id:"front-raise",g:"shoulders",n:"Front raise",a:"Stand on the tube, handles in front of thighs",s:["Arms nearly straight, palms down.","Raise to shoulder height in front of you.","Lower slowly without swinging."],r:"12–15",t:1,m:"Front delts"},
+ {id:"face-pull",g:"shoulders",n:"Face pull",a:"Door anchor at face height, face the door",s:["Arms straight, palms facing down.","Pull toward your forehead, elbows high and wide, then rotate thumbs back.","Return slowly. Keeps shoulders healthy."],r:"15–20",t:1,m:"Rear delts, upper back, rotator cuff"},
+ {id:"reverse-fly",g:"shoulders",n:"Reverse fly",a:"Door anchor at chest height, face the door",s:["Step back, arms straight in front holding the handles.","Open your arms out to a T, squeezing between the shoulder blades.","Bring them back together slowly."],r:"12–15",t:1,m:"Rear delts, upper back"},
+ // biceps
+ {id:"curl",g:"biceps",n:"Biceps curl",a:"Stand on the tube, handles at your sides",s:["Elbows pinned to your sides, palms forward.","Curl the handles up to your shoulders.","Lower for 2–3 seconds to full stretch."],r:"10–15",t:2,m:"Biceps"},
+ {id:"hammer",g:"biceps",n:"Hammer curl",a:"Stand on the tube, palms facing each other",s:["Keep a neutral grip, thumbs up.","Curl up without letting elbows drift forward.","Lower slowly."],r:"10–15",t:2,m:"Biceps, forearms"},
+ {id:"conc-curl",g:"biceps",n:"Seated concentration curl",a:"Seated, tube under one foot",s:["Rest the back of your upper arm on your inner thigh.","Curl the handle up and squeeze at the top.","Lower all the way down."],r:"12 per arm",t:1,m:"Biceps"},
+ // triceps
+ {id:"pushdown",g:"triceps",n:"Triceps pushdown",a:"Door anchor at the top, face the door",s:["Elbows at your sides, forearms parallel to the floor.","Push the handles down until arms are straight.","Let them rise to just above 90° without moving the elbows."],r:"12–15",t:2,m:"Triceps"},
+ {id:"oh-ext",g:"triceps",n:"Overhead extension",a:"Split stance, tube under the back foot",s:["Hold the handle(s) behind your head, elbows pointing up.","Straighten your arms overhead.","Lower slowly behind your head for a deep stretch."],r:"10–15",t:2,m:"Triceps (long head)"},
+ {id:"kickback",g:"triceps",n:"Kickback",a:"Stand on the tube, hinge forward",s:["Upper arms tight to your sides, elbows bent at 90°.","Straighten your arms back until locked out.","Return slowly, keep upper arms still."],r:"12–15",t:1,m:"Triceps"},
+ // legs
+ {id:"squat",g:"legs",n:"Banded squat",a:"Stand on the tube, handles at your shoulders",s:["Feet shoulder-width, toes slightly out.","Sit back and down until thighs are at least parallel.","Drive up through your whole foot and squeeze glutes at the top."],r:"12–20",t:3,m:"Quads, glutes"},
+ {id:"rdl",g:"legs",n:"Romanian deadlift",a:"Stand on the tube, handles in front of thighs",s:["Soft knees, back flat.","Push hips back and slide hands down to mid-shin.","Drive hips forward to stand tall, squeezing glutes."],r:"10–15",t:3,m:"Hamstrings, glutes, lower back"},
+ {id:"split-squat",g:"legs",n:"Split squat",a:"Tube under the front foot, handles at shoulders",s:["Long stance, back heel lifted.","Lower the back knee toward the floor.","Push through the front heel to rise. Do all reps, then switch."],r:"10–12 per leg",t:2,m:"Quads, glutes"},
+ {id:"glute-bridge",g:"legs",n:"Glute bridge",a:"Lie on your back, tube across your hips, hands pin handles to the floor",s:["Feet flat, knees bent.","Drive hips up until your body is straight from knees to shoulders.","Pause 1 second at the top, lower slowly."],r:"15–20",t:2,m:"Glutes, hamstrings"},
+ {id:"lateral-walk",g:"legs",n:"Lateral band walk",a:"Stand on the tube, cross it into an X, handles at hips",s:["Quarter-squat position, chest up.","Step sideways 10–12 steps, keep tension.","Walk back the other way."],r:"12 steps each way",t:1,m:"Glute medius, hips"},
+ {id:"good-morning",g:"legs",n:"Good morning",a:"Stand on the tube, loop it behind your neck/upper back",s:["Feet hip-width, soft knees.","Hinge forward with a flat back until you feel a hamstring stretch.","Drive hips forward to stand."],r:"12–15",t:2,m:"Hamstrings, glutes, lower back"},
+ {id:"calf",g:"legs",n:"Calf raise",a:"Balls of feet on the tube, handles at shoulders",s:["Stand tall, ideally on a step.","Rise as high as you can onto your toes.","Pause, then lower slowly to a full stretch."],r:"15–25",t:2,m:"Calves"},
+ // core
+ {id:"pallof",g:"core",n:"Pallof press",a:"Door anchor at chest height, stand side-on",s:["Hold the handle at your chest, step out until the tube pulls you.","Press straight out and hold 2 seconds without twisting.","Bring it back to your chest. Do all reps, then switch sides."],r:"10 per side",t:2,m:"Obliques, deep core"},
+ {id:"woodchop",g:"core",n:"High-to-low woodchop",a:"Door anchor at the top, stand side-on",s:["Hold the handle with both hands above your shoulder.","Rotate and pull diagonally down across your body to the opposite hip.","Return slowly. Pivot the back foot."],r:"12 per side",t:2,m:"Obliques, abs"},
+ {id:"kneel-crunch",g:"core",n:"Kneeling crunch",a:"Door anchor at the top, kneel facing the door",s:["Hold the handles beside your head.","Crunch your ribs toward your hips, rounding the spine.","Rise slowly. Don't just sit back on your heels."],r:"12–15",t:2,m:"Abs"},
+ {id:"dead-bug",g:"core",n:"Banded dead bug",a:"Lie on your back, door anchor low behind your head",s:["Arms straight up holding the handles, knees at 90°.","Extend one leg long while keeping your lower back pressed down.","Return and switch legs."],r:"10 per side",t:1,m:"Deep core"},
+ {id:"side-plank",g:"core",n:"Side plank",a:"Bodyweight, no tube needed",s:["Elbow under shoulder, body in a straight line.","Lift hips and hold.","Make it harder by holding a tube row with the top arm."],r:"30–45 s per side",t:0,m:"Obliques"}
+];
+const exById = Object.fromEntries(EX.map(e=>[e.id,e]));
+
+const PLAN = [
+ {d:"Mon",f:"Upper body · push focus",dur:"45 min",x:[["chest-press","4 × 10–12"],["incline-press","3 × 12"],["ohp","3 × 10–12"],["lat-raise","3 × 15"],["pushdown","3 × 12–15"],["seated-row","3 × 12"]]},
+ {d:"Tue",f:"Lower body A",dur:"45 min",x:[["squat","4 × 12–15"],["rdl","4 × 10–12"],["split-squat","3 × 10 / leg"],["glute-bridge","3 × 15"],["calf","3 × 20"]]},
+ {d:"Wed",f:"Pull + core",dur:"45 min",x:[["seated-row","4 × 12"],["lat-pulldown","3 × 12"],["face-pull","3 × 15"],["curl","3 × 12"],["hammer","2 × 12"],["pallof","3 × 10 / side"],["dead-bug","3 × 10 / side"]]},
+ {d:"Thu",f:"Active recovery",dur:"40 min",notes:["30–40 min brisk walk (aim for 8,000+ steps today)","10 min mobility: hips, upper back, shoulders","Light band pull-aparts, 2 × 20"]},
+ {d:"Fri",f:"Upper body · pull focus",dur:"45 min",x:[["band-pushup","3 × 8–15"],["bent-row","4 × 10–12"],["chest-fly","3 × 12–15"],["reverse-fly","3 × 15"],["oh-ext","3 × 12"],["conc-curl","2 × 12 / arm"]]},
+ {d:"Sat",f:"Lower body B + core",dur:"50 min",x:[["split-squat","3 × 12 / leg"],["good-morning","3 × 12"],["squat","3 × 15, 2 s pause"],["lateral-walk","3 × 12 steps"],["woodchop","3 × 12 / side"],["kneel-crunch","3 × 15"],["side-plank","3 × 30 s / side"]]},
+ {d:"Sun",f:"Rest",dur:"",notes:["Full rest. Sleep 7–9 hours","Easy walk if you feel like it","Prep protein for the week"]}
+];
+const DAYFULL = {Mon:"Monday",Tue:"Tuesday",Wed:"Wednesday",Thu:"Thursday",Fri:"Friday",Sat:"Saturday",Sun:"Sunday"};
+
+function el(tag, attrs={}, ...kids){
+  const n=document.createElement(tag);
+  for(const [k,v] of Object.entries(attrs)){ if(k==="class") n.className=v; else if(k.startsWith("on")) n.addEventListener(k.slice(2),v); else n.setAttribute(k,v); }
+  for(const k of kids.flat()){ if(k==null) continue; n.append(k.nodeType?k:document.createTextNode(k)); }
+  return n;
+}
+function tension(t){
+  if(!t) return el("span",{class:"tension"},"Bodyweight");
+  const w=el("span",{class:"tension",title:"Suggested tube tension"});
+  for(let i=1;i<=3;i++) w.append(el("i",{class:i<=t?"on":""}));
+  w.append(["","Light","Medium","Heavy"][t]);
+  return w;
+}
+
+/*ANIM*/
+/* animation loop: only canvases on screen are drawn */
+const reducedMQ=matchMedia("(prefers-reduced-motion: reduce)");
+const visible=new Set();
+const io=("IntersectionObserver" in window)?new IntersectionObserver(es=>{
+  es.forEach(x=>{ if(x.isIntersecting){visible.add(x.target); if(reducedMQ.matches) paintScene(x.target,x.target.dataset.ex,0,true);} else visible.delete(x.target); });
+}):null;
+function watchDemo(c){ if(io) io.observe(c); else visible.add(c); }
+function frame(ms){
+  if(!reducedMQ.matches) visible.forEach(c=>{ if(c.isConnected) paintScene(c,c.dataset.ex,ms,false); else {visible.delete(c); io&&io.unobserve(c);} });
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+function repaintStatic(){ if(reducedMQ.matches) visible.forEach(c=>paintScene(c,c.dataset.ex,0,true)); }
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change",repaintStatic);
+reducedMQ.addEventListener("change",repaintStatic);
+new MutationObserver(repaintStatic).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+
+/* plan */
+const todayIdx = (new Date().getDay()+6)%7;
+const week = document.getElementById("week");
+PLAN.forEach((p,i)=>{
+  const body = el("div",{class:"daybody"},
+    el("div",{class:"focus"}, el("h3",{},p.f), p.dur?el("span",{},p.dur):null));
+  if(p.x){
+    const ul=el("ul",{class:"exlist"});
+    p.x.forEach(([id,sets])=>{
+      const e=exById[id];
+      ul.append(el("li",{}, el("button",{class:"exbtn",type:"button",onclick:()=>openEx(id)},e.n), tension(e.t), el("span",{class:"sets"},sets)));
+    });
+    body.append(ul);
+  } else {
+    body.append(el("ul",{class:"notes"}, p.notes.map(t=>el("li",{},t))));
+  }
+  week.append(el("div",{class:"day"+(i===todayIdx?" today":"")},
+    el("div",{class:"dayname"},p.d, i===todayIdx?el("small",{},"TODAY"):null), body));
+});
+
+/* library */
+let activeGroup="all";
+const chipsBox=document.getElementById("groupChips"), grid=document.getElementById("exGrid");
+function renderChips(){
+  chipsBox.innerHTML="";
+  [["all","All"],...Object.entries(GROUPS)].forEach(([k,v])=>{
+    chipsBox.append(el("button",{class:"chip",type:"button","aria-pressed":String(k===activeGroup),onclick:()=>{activeGroup=k;renderChips();renderGrid();}},v));
+  });
+}
+function videoLink(e){
+  return el("a",{class:"vidlink",href:"https://www.youtube.com/results?search_query="+encodeURIComponent(e.n+" resistance band exercise form"),target:"_blank",rel:"noopener"},"Watch video demos ↗");
+}
+function demoCanvas(id){
+  const c=el("canvas",{class:"demo","data-ex":id,role:"img","aria-label":"Animated demo of "+exById[id].n});
+  watchDemo(c); return c;
+}
+function exCard(e){
+  return el("article",{class:"card"},
+    demoCanvas(e.id),
+    el("div",{class:"row"}, el("div",{}, el("div",{class:"label"},GROUPS[e.g]), el("h3",{},e.n)), tension(e.t)),
+    el("div",{class:"setup"}, el("b",{},"Setup: "), e.a),
+    el("ol",{}, e.s.map(s=>el("li",{},s))),
+    el("div",{class:"meta"}, el("span",{},"Reps ",el("b",{},e.r)), el("span",{},"Works ",el("b",{},e.m))),
+    videoLink(e));
+}
+function renderGrid(){
+  grid.innerHTML="";
+  EX.filter(e=>activeGroup==="all"||e.g===activeGroup).forEach(e=>grid.append(exCard(e)));
+}
+renderChips(); renderGrid();
+
+/* modal */
+const overlay=document.getElementById("overlay");
+let lastFocus=null;
+function openEx(id){
+  const e=exById[id]; lastFocus=document.activeElement;
+  document.getElementById("mGroup").textContent=GROUPS[e.g];
+  document.getElementById("mTitle").textContent=e.n;
+  const b=document.getElementById("mBody"); b.innerHTML="";
+  b.append(demoCanvas(id), tension(e.t), el("div",{class:"setup"},el("b",{},"Setup: "),e.a), el("ol",{style:"margin:0;padding-left:18px"},e.s.map(s=>el("li",{},s))),
+    el("div",{class:"meta"}, el("span",{},"Reps ",el("b",{},e.r)), el("span",{},"Works ",el("b",{},e.m))), videoLink(e));
+  overlay.hidden=false; document.getElementById("mClose").focus();
+}
+function closeEx(){ overlay.hidden=true; lastFocus&&lastFocus.focus(); }
+document.getElementById("mClose").onclick=closeEx;
+overlay.addEventListener("click",e=>{ if(e.target===overlay) closeEx(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&!overlay.hidden) closeEx(); });
+
+/* tabs */
+const TABS={plan:"tab-plan",ex:"tab-ex",food:"tab-food"};
+function showTab(key){
+  for(const [k,id] of Object.entries(TABS)){
+    const on=k===key; document.getElementById(id).setAttribute("aria-selected",String(on));
+    document.getElementById("view-"+k).hidden=!on;
+  }
+  try{localStorage.setItem("tf-tab",key);}catch(e){}
+}
+for(const [k,id] of Object.entries(TABS)) document.getElementById(id).onclick=()=>showTab(k);
+let startTab="plan";
+const h=(location.hash||"").slice(1);
+if(TABS[h]) startTab=h; else { try{ const s=localStorage.getItem("tf-tab"); if(TABS[s]) startTab=s; }catch(e){} }
+showTab(startTab);
+
+/* ---------- nutrition ---------- */
+// [name, kcal, protein, carbs, fat per 100 g, serving label, grams per serving]
+const FOODS = [
+ ["Chicken breast, cooked",165,31,0,3.6,"1 piece (120 g)",120],
+ ["Egg, whole",143,12.6,0.7,9.5,"1 large egg",50],
+ ["Egg white",52,10.9,0.7,0.2,"1 white",33],
+ ["Paneer",265,18.3,1.2,20.8,"100 g",100],
+ ["Tofu, firm",144,17.3,2.8,8.7,"100 g",100],
+ ["Greek yogurt, plain non-fat",59,10.2,3.6,0.4,"1 cup (170 g)",170],
+ ["Curd / dahi, full fat",61,3.5,4.7,3.3,"1 bowl (150 g)",150],
+ ["Laban (buttermilk)",40,3.3,4.8,1,"1 glass (250 ml)",250],
+ ["Milk, full cream",61,3.2,4.8,3.3,"1 glass (250 ml)",250],
+ ["Milk, low fat",50,3.3,4.8,2,"1 glass (250 ml)",250],
+ ["Whey protein powder",400,80,8,6,"1 scoop (30 g)",30],
+ ["Tuna, canned in water",116,25.5,0,0.8,"1 can drained (120 g)",120],
+ ["Salmon, cooked",206,22,0,12,"1 fillet (150 g)",150],
+ ["Fish (hammour), grilled",110,23,0,1.5,"1 fillet (150 g)",150],
+ ["Mutton / lamb, cooked",258,25.6,0,16.5,"1 serving (120 g)",120],
+ ["Chicken curry",150,14,4,8.5,"1 bowl (200 g)",200],
+ ["Dal, cooked",116,9,20,0.4,"1 katori (150 g)",150],
+ ["Chickpeas / chole, cooked",164,8.9,27.4,2.6,"1 katori (150 g)",150],
+ ["Rajma, cooked",127,8.7,22.8,0.5,"1 katori (150 g)",150],
+ ["White rice, cooked",130,2.7,28,0.3,"1 cup (160 g)",160],
+ ["Brown rice, cooked",123,2.7,25.6,1,"1 cup (160 g)",160],
+ ["Chicken biryani",165,8,20,5.5,"1 plate (350 g)",350],
+ ["Roti / chapati",300,9.8,46,8,"1 roti (40 g)",40],
+ ["Paratha, plain",326,6.4,45,13,"1 paratha (80 g)",80],
+ ["Arabic bread (khubz)",275,9,55,1.2,"1 piece (60 g)",60],
+ ["Whole wheat bread",247,13,41,3.4,"1 slice (32 g)",32],
+ ["Oats, dry",389,16.9,66,6.9,"½ cup (40 g)",40],
+ ["Poha, cooked",130,2.5,24,3,"1 plate (200 g)",200],
+ ["Idli",146,4.5,30,0.6,"1 idli (40 g)",40],
+ ["Dosa, plain",168,3.9,29,3.7,"1 dosa (85 g)",85],
+ ["Pasta, cooked",158,5.8,31,0.9,"1 plate (180 g)",180],
+ ["Potato, boiled",87,1.9,20,0.1,"1 medium (150 g)",150],
+ ["Sweet potato, baked",90,2,20.7,0.2,"1 medium (150 g)",150],
+ ["Chicken shawarma wrap",230,13,22,10,"1 wrap (250 g)",250],
+ ["Falafel",333,13.3,31.8,17.8,"1 piece (17 g)",17],
+ ["Hummus",166,7.9,14.3,9.6,"2 tbsp (30 g)",30],
+ ["Banana",89,1.1,22.8,0.3,"1 medium (118 g)",118],
+ ["Apple",52,0.3,13.8,0.2,"1 medium (180 g)",180],
+ ["Mango",60,0.8,15,0.4,"1 cup (165 g)",165],
+ ["Dates",277,1.8,75,0.2,"1 date (24 g)",24],
+ ["Almonds",579,21,21.6,49.9,"1 handful (28 g)",28],
+ ["Peanut butter",588,25,20,50,"1 tbsp (16 g)",16],
+ ["Avocado",160,2,8.5,14.7,"½ avocado (100 g)",100],
+ ["Cheese, cheddar",403,25,1.3,33,"1 slice (21 g)",21],
+ ["Olive oil",884,0,0,100,"1 tbsp (13.5 g)",13.5],
+ ["Ghee",900,0,0,100,"1 tsp (5 g)",5],
+ ["Butter",717,0.9,0.1,81,"1 tbsp (14 g)",14],
+ ["Broccoli",34,2.8,6.6,0.4,"1 cup (90 g)",90],
+ ["Mixed salad vegetables",20,1,4,0.2,"1 bowl (100 g)",100],
+ ["Sugar",387,0,100,0,"1 tsp (4 g)",4],
+ ["Soft drink (cola)",42,0,10.6,0,"1 can (330 ml)",330],
+ ["Tea with milk & sugar",40,1,6.5,1,"1 cup (150 ml)",150]
+];
+const foodByName = Object.fromEntries(FOODS.map(f=>[f[0].toLowerCase(),f]));
+document.getElementById("foodList").append(...FOODS.map(f=>el("option",{value:f[0]})));
+
+const MAC=[["p","Protein","--protein"],["c","Carbs","--carbs"],["f","Fat","--fat"]];
+const DEFAULT_TARGETS={p:140,c:220,f:65};
+let targets={...DEFAULT_TARGETS};
+let curDate=dateKey(new Date());
+let entries=[];
+const r1=x=>Math.round(x*10)/10;
+
+function dateKey(d){ return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function parseKey(k){ const [y,m,d]=k.split("-").map(Number); return new Date(y,m-1,d); }
+function kcalOf(o){ return o.p*4+o.c*4+o.f*9; }
+
+/* storage: private per-person db when available, browser storage as fallback/cache */
+let db=null, uid=null, writeChain=Promise.resolve();
+const lsGet=k=>{ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } };
+const lsSet=(k,v)=>{ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} };
+const statusEl=document.getElementById("syncStatus");
+function setStatus(t){ statusEl.textContent=t; }
+
+function dbWrite(docId,data){
+  if(!db||!uid) return;
+  const ref=db.collection("data/users/"+uid).doc(docId);
+  writeChain=writeChain.then(()=>ref.set(data)).then(()=>setStatus("Saved to your account"),err=>{
+    setStatus(err&&err.code==="quota_exceeded"?"Storage full. Delete old days to keep saving.":"Saved on this device only");
+  });
+}
+function saveDay(){
+  const data={date:curDate,entries};
+  lsSet("tf-day-"+curDate,data);
+  dbWrite("day-"+curDate,data);
+}
+function saveTargets(){
+  lsSet("tf-targets",targets);
+  dbWrite("targets",targets);
+}
+async function loadDay(){
+  const local=lsGet("tf-day-"+curDate);
+  entries=(local&&Array.isArray(local.entries))?local.entries:[];
+  renderFood();
+  if(db&&uid){
+    const key=curDate;
+    try{
+      const snap=await db.collection("data/users/"+uid).doc("day-"+key).get();
+      if(key!==curDate) return;
+      if(snap.exists){ const d=snap.data(); entries=Array.isArray(d.entries)?d.entries.map(x=>({...x})):[]; lsSet("tf-day-"+key,{date:key,entries}); renderFood(); }
+      else if(entries.length) saveDay();
+    }catch(e){ setStatus("Saved on this device only"); }
+  }
+}
+
+/* rendering */
+function renderFood(){
+  const d=parseKey(curDate), today=dateKey(new Date());
+  document.getElementById("dateLabel").textContent = curDate===today?"Today":d.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"});
+  document.getElementById("todayBtn").hidden = curDate===today;
+
+  const tot={p:0,c:0,f:0}; entries.forEach(e=>{tot.p+=e.p;tot.c+=e.c;tot.f+=e.f;});
+  const eaten=Math.round(kcalOf(tot)), tk=Math.round(kcalOf(targets));
+  document.getElementById("kcalEaten").textContent=eaten.toLocaleString();
+  const kdiff=tk-eaten;
+  document.getElementById("kcalTarget").textContent = "of "+tk.toLocaleString()+" kcal · "+(kdiff>=0? kdiff.toLocaleString()+" left" : Math.abs(kdiff).toLocaleString()+" over");
+
+  const bars=document.getElementById("bars"); bars.innerHTML="";
+  MAC.forEach(([k,name,col])=>{
+    const got=r1(tot[k]), tgt=targets[k]||0, diff=r1(tgt-got);
+    const pct=tgt?Math.min(100,got/tgt*100):0;
+    let txt,cls="left";
+    if(tgt===0) txt="No target set";
+    else if(Math.abs(diff)<=Math.max(3,tgt*0.03)){ txt="On target"; cls+=" done"; }
+    else if(diff>0) txt=diff+" g to go";
+    else { txt=Math.abs(diff)+" g over"; cls+=" over"; }
+    bars.append(el("div",{},
+      el("div",{class:"bar-head"},
+        el("span",{}, el("span",{class:"dot",style:`background:var(${col})`}), el("b",{},name), " ", el("span",{class:"num muted"},`${got} / ${tgt} g`)),
+        el("span",{class:cls+" num"},txt)),
+      el("div",{class:"track",role:"progressbar","aria-label":name,"aria-valuemin":"0","aria-valuemax":String(tgt),"aria-valuenow":String(got)},
+        el("div",{class:"fill",style:`width:${pct}%;background:var(${diff<0&&tgt?"--over":col})`}))));
+  });
+
+  const box=document.getElementById("logBox"); box.innerHTML="";
+  if(!entries.length){
+    const quick=["Egg, whole","Dal, cooked","Chicken breast, cooked","Roti / chapati","Greek yogurt, plain non-fat","Banana"];
+    box.append(el("div",{class:"empty"},
+      el("p",{},"Nothing logged for this day yet. Add a food above, or tap one to log a single serving:"),
+      el("div",{class:"chips"}, quick.map(n=>el("button",{class:"chip",type:"button",onclick:()=>addFood(foodByName[n.toLowerCase()],1,"serving")},"+ "+n)))));
+    return;
+  }
+  const tb=el("tbody");
+  entries.forEach(e=>{
+    tb.append(el("tr",{},
+      el("td",{}, e.name, el("span",{class:"sub"},e.desc)),
+      el("td",{},String(r1(e.p))), el("td",{},String(r1(e.c))), el("td",{},String(r1(e.f))),
+      el("td",{},String(Math.round(kcalOf(e)))),
+      el("td",{}, el("button",{class:"del",type:"button","aria-label":"Remove "+e.name,onclick:()=>{entries=entries.filter(x=>x.id!==e.id);saveDay();renderFood();}},"×"))));
+  });
+  box.append(el("div",{class:"tablewrap"}, el("table",{},
+    el("thead",{},el("tr",{},el("th",{},"Food"),el("th",{},"Protein g"),el("th",{},"Carbs g"),el("th",{},"Fat g"),el("th",{},"kcal"),el("th",{},""))),
+    tb,
+    el("tfoot",{},el("tr",{},el("td",{},"Total"),el("td",{},String(r1(tot.p))),el("td",{},String(r1(tot.c))),el("td",{},String(r1(tot.f))),el("td",{},String(eaten)),el("td",{},""))))));
+}
+
+function addFood(f,qty,unit){
+  if(!f||!(qty>0)) return;
+  const grams = unit==="g"?qty:qty*f[6];
+  const k=grams/100;
+  entries=[...entries,{id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:f[0],
+    desc: unit==="g"? `${qty} g` : `${qty} × ${f[5]}`,
+    p:r1(f[2]*k), c:r1(f[3]*k), f:r1(f[4]*k)}];
+  saveDay(); renderFood();
+}
+
+/* add form */
+const fName=document.getElementById("foodName"), fQty=document.getElementById("foodQty"), fUnit=document.getElementById("foodUnit"), prev=document.getElementById("preview");
+function updatePreview(){
+  const f=foodByName[fName.value.trim().toLowerCase()], q=parseFloat(fQty.value);
+  if(!f){ prev.textContent = fName.value.trim()? "Pick a food from the list, or add it as your own food below." : ""; return; }
+  const grams=fUnit.value==="g"?q:q*f[6]; const k=(grams||0)/100;
+  prev.textContent = `1 serving = ${f[5]}. This adds ${r1(f[2]*k)} g protein · ${r1(f[3]*k)} g carbs · ${r1(f[4]*k)} g fat · ${Math.round(f[1]*k)} kcal`;
+}
+[fName,fQty,fUnit].forEach(x=>x.addEventListener("input",updatePreview));
+fUnit.addEventListener("change",()=>{ const f=foodByName[fName.value.trim().toLowerCase()]; fQty.value = fUnit.value==="g" ? (f?f[6]:100) : 1; updatePreview(); });
+document.getElementById("addForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const f=foodByName[fName.value.trim().toLowerCase()];
+  if(!f){ updatePreview(); fName.focus(); return; }
+  addFood(f,parseFloat(fQty.value),fUnit.value);
+  fName.value=""; fQty.value=fUnit.value==="g"?100:1; prev.textContent="Added "+f[0]+"."; fName.focus();
+});
+document.getElementById("customForm").addEventListener("submit",e=>{
+  e.preventDefault();
+  const name=document.getElementById("cName").value.trim()||"Custom food";
+  const p=parseFloat(document.getElementById("cP").value)||0, c=parseFloat(document.getElementById("cC").value)||0, f=parseFloat(document.getElementById("cF").value)||0;
+  if(!(p||c||f)) return;
+  entries=[...entries,{id:Date.now().toString(36),name,desc:"Your own entry",p:r1(p),c:r1(c),f:r1(f)}];
+  saveDay(); renderFood(); e.target.reset();
+});
+
+/* day nav */
+function shiftDay(n){ const d=parseKey(curDate); d.setDate(d.getDate()+n); curDate=dateKey(d); loadDay(); }
+document.getElementById("prevDay").onclick=()=>shiftDay(-1);
+document.getElementById("nextDay").onclick=()=>shiftDay(1);
+document.getElementById("todayBtn").onclick=()=>{ curDate=dateKey(new Date()); loadDay(); };
+
+/* targets */
+const tIn={p:document.getElementById("tP"),c:document.getElementById("tC"),f:document.getElementById("tF")};
+function fillTargets(){ for(const k in tIn) tIn[k].value=targets[k]; document.getElementById("tK").textContent=Math.round(kcalOf(targets)).toLocaleString()+" kcal"; }
+let tTimer=null;
+for(const k in tIn) tIn[k].addEventListener("input",()=>{
+  targets={...targets,[k]:Math.max(0,parseFloat(tIn[k].value)||0)};
+  document.getElementById("tK").textContent=Math.round(kcalOf(targets)).toLocaleString()+" kcal";
+  renderFood(); clearTimeout(tTimer); tTimer=setTimeout(saveTargets,600);
+});
+document.getElementById("calcBtn").onclick=()=>{
+  const w=parseFloat(document.getElementById("wKg").value)||75, goal=document.getElementById("goal").value, act=parseFloat(document.getElementById("act").value);
+  let kcal=w*act + ({lose:-450,keep:0,gain:250})[goal];
+  const p=Math.round(w*(goal==="lose"?2.0:1.8)), f=Math.round(w*0.8), c=Math.max(50,Math.round((kcal-p*4-f*9)/4));
+  targets={p,c,f}; fillTargets(); renderFood(); saveTargets();
+};
+
+/* ---------- meal photo → foods ---------- */
+let sampleFn=null, sampleImages=false, sampleKnown=false, photoCtl=null;
+const IN_CLAUDE=!!(window.claude&&window.claude.use);
+const photoBox=document.getElementById("photoBox"), photoBody=document.getElementById("photoBody"), photoImg=document.getElementById("photoImg"), photoHint=document.getElementById("photoHint");
+const keyPanel=document.getElementById("keyPanel"), keyIn=document.getElementById("apiKey"), keyStatus=document.getElementById("keyStatus");
+const getKey=()=>{ try{ return localStorage.getItem("tf-anthropic-key")||""; }catch(e){ return ""; } };
+function refreshKeyUI(){
+  // the key option is only for the standalone app; inside Claude the page asks Claude directly
+  keyPanel.hidden = IN_CLAUDE;
+  keyStatus.textContent = getKey()? "Key saved on this device." : "No key saved yet.";
+}
+document.getElementById("saveKey").onclick=()=>{ const v=keyIn.value.trim(); if(!v.startsWith("sk-")){ keyStatus.textContent="That doesn't look like an Anthropic key. It starts with sk-ant-."; return; } try{ localStorage.setItem("tf-anthropic-key",v); }catch(e){} keyIn.value=""; refreshKeyUI(); };
+document.getElementById("clearKey").onclick=()=>{ try{ localStorage.removeItem("tf-anthropic-key"); }catch(e){} refreshKeyUI(); };
+refreshKeyUI();
+
+const snapInput=document.getElementById("snapInput"), pickInput=document.getElementById("pickInput");
+document.getElementById("snapBtn").onclick=()=>snapInput.click();
+document.getElementById("pickBtn").onclick=()=>pickInput.click();
+[snapInput,pickInput].forEach(inp=>inp.addEventListener("change",()=>{ const f=inp.files&&inp.files[0]; inp.value=""; if(f) handlePhoto(f); }));
+
+const PHOTO_PROMPT = `You are a nutrition assistant. The attached image is a photo of a meal someone is about to eat.
+Identify each distinct food or drink on the plate, estimate the portion actually shown, and estimate protein, carbs and fat in grams for that portion.
+Use typical Indian, Middle Eastern and international recipes where relevant. If something is ambiguous, pick the most likely option and say so in the note.
+Reply with only JSON in exactly this shape:
+{"items":[{"name":"Chicken biryani","portion":"1 plate, about 350 g","protein":28,"carbs":70,"fat":19}],"note":"one short sentence of caveats"}
+If there is no food in the photo, reply {"items":[],"note":"No food found in this photo."}`;
+
+function shrink(file){
+  return new Promise(res=>{
+    const url=URL.createObjectURL(file), img=new Image();
+    img.onload=()=>{ const m=1024, s=Math.min(1,m/Math.max(img.width,img.height)); const c=document.createElement("canvas"); c.width=Math.round(img.width*s); c.height=Math.round(img.height*s);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height); c.toBlob(b=>{ URL.revokeObjectURL(url); res(b||file); },"image/jpeg",0.85); };
+    img.onerror=()=>{ URL.revokeObjectURL(url); res(file); };
+    img.src=url;
+  });
+}
+const blobToB64=b=>new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(",")[1]); r.onerror=rej; r.readAsDataURL(b); });
+function parseJSON(t){ const a=t.indexOf("{"), b=t.lastIndexOf("}"); if(a<0||b<a) throw {code:"invalid_json"}; return JSON.parse(t.slice(a,b+1)); }
+
+async function recognise(blob,signal){
+  if(sampleFn&&sampleImages){
+    return await sampleFn.json(PHOTO_PROMPT,{images:[blob],signal,cache:false});
+  }
+  if(IN_CLAUDE) throw {code: sampleKnown?"no_sample":"not_ready"};
+  const key=getKey();
+  if(key){
+    const data=await blobToB64(blob);
+    const r=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:{"content-type":"application/json","x-api-key":key,"anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"},
+      body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:1500,messages:[{role:"user",content:[{type:"image",source:{type:"base64",media_type:"image/jpeg",data}},{type:"text",text:PHOTO_PROMPT}]}]})});
+    if(!r.ok){ const status=r.status; throw {code: status===401?"bad_key": status===429?"rate_limited":"upstream_error"}; }
+    const j=await r.json(); const text=(j.content||[]).filter(x=>x.type==="text").map(x=>x.text).join("");
+    return parseJSON(text);
+  }
+  throw {code:"no_recogniser"};
+}
+const PHOTO_ERRORS={
+  bad_key:"Your API key was rejected. Check it in Photo recognition setup below.",
+  rate_limited:"Too many requests right now. Try again in a minute.",
+  not_granted:"Photo recognition wasn't allowed, so pick the foods from the list instead.",
+  sampling_disabled:"Claude isn't available on this account, so pick the foods from the list instead.",
+  image_rejected:"That photo couldn't be read. Try another one.",
+  refused:"Claude couldn't analyse this photo. Try another one.",
+  no_sample:"Photo recognition isn't available here, so add the foods with the search box above.",
+  not_ready:"Still connecting to Claude. Try again in a few seconds.",
+  invalid_json:"The answer came back in the wrong format. Try again.",
+  no_recogniser:"Add your Anthropic API key in Photo recognition setup below to identify foods from photos. Until then, add the foods with the search box above."
+};
+
+async function handlePhoto(file){
+  if(photoCtl) photoCtl.abort();
+  photoBox.hidden=false;
+  if(photoImg.dataset.url) URL.revokeObjectURL(photoImg.dataset.url);
+  const blob=await shrink(file); const u=URL.createObjectURL(blob); photoImg.src=u; photoImg.dataset.url=u;
+  photoBody.innerHTML="";
+  const stop=el("button",{class:"btn ghost",type:"button"},"Stop");
+  photoBody.append(el("p",{},el("span",{class:"spin"}),"Identifying the food on your plate…"), stop);
+  const ctl=new AbortController(); photoCtl=ctl; stop.onclick=()=>ctl.abort();
+  try{
+    const res=await recognise(blob,ctl.signal);
+    if(ctl!==photoCtl) return;
+    showDetections(res);
+  }catch(e){
+    if(ctl!==photoCtl) return;
+    if(e&&(e.code==="cancelled"||e.name==="AbortError")){ closePhoto(); return; }
+    if(e&&e.code==="no_recogniser"){ keyPanel.hidden=false; keyPanel.querySelector("details").open=true; }
+    photoBody.innerHTML="";
+    photoBody.append(el("p",{},PHOTO_ERRORS[e&&e.code]||"Something went wrong while analysing the photo. Try again."), el("button",{class:"btn ghost",type:"button",onclick:closePhoto},"Close"));
+  }finally{ if(ctl===photoCtl) photoCtl=null; }
+}
+function closePhoto(){ photoBox.hidden=true; photoBody.innerHTML=""; if(photoImg.dataset.url){ URL.revokeObjectURL(photoImg.dataset.url); photoImg.removeAttribute("src"); delete photoImg.dataset.url; } }
+
+function showDetections(res){
+  const items=Array.isArray(res&&res.items)?res.items:[];
+  photoBody.innerHTML="";
+  if(!items.length){ photoBody.append(el("p",{},(res&&res.note)||"No food found in this photo."), el("button",{class:"btn ghost",type:"button",onclick:closePhoto},"Close")); return; }
+  photoBody.append(el("p",{class:"muted",style:"font-size:.9rem"},"Estimated from your photo. Untick anything that's wrong and adjust the grams before adding."));
+  const rows=[];
+  const head=el("div",{class:"det"},el("span",{}),el("span",{class:"det-head"},"Food"),el("span",{class:"det-head"},"Protein"),el("span",{class:"det-head"},"Carbs"),el("span",{class:"det-head"},"Fat"));
+  photoBody.append(head);
+  items.forEach((it,i)=>{
+    const ck=el("input",{type:"checkbox","aria-label":"Include "+(it.name||"item")}); ck.checked=true;
+    const nm=el("input",{type:"text",id:"det-n-"+i}); nm.value=String(it.name||"Food");
+    const num=(v,k)=>{ const x=el("input",{type:"number",min:"0",step:"any",id:"det-"+k+"-"+i,"aria-label":k}); x.value=r1(Math.max(0,+v||0)); return x; };
+    const p=num(it.protein,"protein"), c=num(it.carbs,"carbs"), f=num(it.fat,"fat");
+    rows.push({ck,nm,p,c,f,portion:String(it.portion||"")});
+    photoBody.append(el("div",{class:"det"},ck,nm,p,c,f, it.portion?el("span",{class:"portion"},String(it.portion)):null));
+  });
+  if(res.note) photoBody.append(el("p",{class:"muted",style:"font-size:.85rem"},String(res.note)));
+  const add=el("button",{class:"btn",type:"button"},"Add to log");
+  add.onclick=()=>{
+    const picked=rows.filter(r=>r.ck.checked);
+    if(!picked.length) return;
+    const stamp=Date.now().toString(36);
+    entries=[...entries,...picked.map((r,i)=>({id:stamp+"p"+i,name:r.nm.value.trim()||"Food",desc:"From photo"+(r.portion?" · "+r.portion:""),p:r1(+r.p.value||0),c:r1(+r.c.value||0),f:r1(+r.f.value||0)}))];
+    saveDay(); renderFood(); closePhoto();
+    photoHint.textContent="Added "+picked.length+" item"+(picked.length>1?"s":"")+" from your photo.";
+  };
+  photoBody.append(el("div",{class:"photo-actions"},add,el("button",{class:"btn ghost",type:"button",onclick:closePhoto},"Discard")));
+}
+
+/* boot */
+(function(){
+  const t=lsGet("tf-targets"); if(t&&typeof t.p==="number") targets={p:t.p,c:t.c,f:t.f};
+  fillTargets(); loadDay();
+  if(!lsGet("tf-targets")) document.getElementById("targetBox").open=true;
+})();
+(async function connectSample(){
+  if(!IN_CLAUDE) return;
+  try{
+    const s=await window.claude.use("sample");
+    if(s){ sampleFn=s; const lim=await s.limits().catch(()=>null); sampleImages=!!(lim&&lim.images); }
+  }catch(e){}
+  sampleKnown=true; refreshKeyUI();
+})();
+(async function connect(){
+  try{
+    if(!window.claude||!window.claude.use){ setStatus("Saved on this device"); return; }
+    const [d,u]=await Promise.all([window.claude.use("db"),window.claude.use("user")]);
+    const id=u?await u.id():null;
+    if(!d||!id){ setStatus("Saved on this device"); return; }
+    db=d; uid=id; setStatus("Synced to your account");
+    try{
+      const ts=await db.collection("data/users/"+uid).doc("targets").get();
+      if(ts.exists){ const x=ts.data(); targets={p:+x.p||0,c:+x.c||0,f:+x.f||0}; lsSet("tf-targets",targets); fillTargets(); document.getElementById("targetBox").open=false; }
+      else if(lsGet("tf-targets")) saveTargets();
+    }catch(e){}
+    loadDay();
+  }catch(e){ setStatus("Saved on this device"); }
+})();
+</script>

@@ -1,0 +1,16 @@
+{
+  "name": "tube-training-log",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Resistance-tube home workout plan with animated exercise demos and a macro-tracking food log with meal photo recognition.",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@capacitor/android": "6.2.0",
+    "@capacitor/core": "6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "6.2.0"
+  }
+}
