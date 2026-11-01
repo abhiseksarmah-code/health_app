@@ -78,24 +78,83 @@ function solve(spec,P){
   return {hip,neck,head,armN,armF,legN,legF,footN:foot(legN,false),footF:foot(legF,true)};
 }
 function cssVar(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()||"#888";}
-/* outfit colours are fixed (they are clothes, not UI); far-side limbs use the darker shade */
-const OUTFIT={
-  near:{skin:"#C98B5F",shirt:"#1E8A9E",shorts:"#3D5275",shoe:"#2E3138",sole:"#F2F2EE"},
-  far:{skin:"#A8714B",shirt:"#16697A",shorts:"#2F405D",shoe:"#24262C",sole:"#D9D9D4"},
-  hair:"#2B1D15",handle:"#26282D"
+
+/* ---- anatomical figure: shaded grey body, trained muscles highlighted ----
+   Muscles per exercise: [primary, secondary], space-separated. */
+const MUSCLES={
+ "chest-press":["chest","delts triceps"],"incline-press":["chest","delts"],"chest-fly":["chest",""],"band-pushup":["chest","triceps abs"],"crossover":["chest",""],
+ "seated-row":["upperback lats","biceps"],"bent-row":["lats upperback","biceps"],"lat-pulldown":["lats","biceps"],"straight-arm":["lats",""],"pull-apart":["upperback delts",""],
+ "ohp":["delts","triceps"],"lat-raise":["delts",""],"front-raise":["delts",""],"face-pull":["delts upperback",""],"reverse-fly":["delts upperback",""],
+ "curl":["biceps","forearms"],"hammer":["biceps forearms",""],"conc-curl":["biceps",""],
+ "pushdown":["triceps",""],"oh-ext":["triceps",""],"kickback":["triceps",""],
+ "squat":["quads glutes",""],"rdl":["hamstrings glutes","lowerback"],"split-squat":["quads glutes",""],"glute-bridge":["glutes","hamstrings"],
+ "lateral-walk":["glutes",""],"good-morning":["hamstrings lowerback","glutes"],"calf":["calves",""],
+ "pallof":["obliques abs",""],"woodchop":["obliques","abs"],"kneel-crunch":["abs",""],"dead-bug":["abs",""],"side-plank":["obliques",""]
 };
+function muscleState(id){
+  const m=MUSCLES[id]||["",""], st={};
+  m[1].split(" ").filter(Boolean).forEach(k=>st[k]="s");
+  m[0].split(" ").filter(Boolean).forEach(k=>st[k]="p");
+  return st;
+}
+const NEAR={skin:"#C4C8CD",shade:"#80868E",light:"#EEF0F2"};
+const FAR={skin:"#A3A8AE",shade:"#676D75",light:"#C3C7CC"};
+const BODY={line:"rgba(30,34,40,.22)",shorts:"#1E2125",shortsHi:"#3B4047",shoe:"#59606A",sole:"#E8E8E4",hair:"#33373D",handle:"#1B1D21"};
+const HI={p:["#FF8A4C","#D8341C"],s:["#FFC3A0","#EE8A60"]};
+const TUBE="#1F7AE0";
+
+const V=(a,b)=>[b[0]-a[0],b[1]-a[1]];
+const nrm=v=>{const l=Math.hypot(v[0],v[1])||1;return [v[0]/l,v[1]/l];};
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1];
+const add=(a,v,k)=>[a[0]+v[0]*k,a[1]+v[1]*k];
 function at(a,b,t){return [a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];}
-function drawFigure(ctx,spec,P,colors,alpha){
-  const S=solve(spec,P), front=spec.v==="front";
+function capsulePath(ctx,a,b,ra,rb){
+  if(Math.hypot(b[0]-a[0],b[1]-a[1])<0.01) b=[a[0]+0.01,a[1]];
+  const u=nrm(V(a,b)), au=Math.atan2(u[1],u[0]), n=[-u[1],u[0]];
+  ctx.beginPath();
+  ctx.moveTo(a[0]+n[0]*ra,a[1]+n[1]*ra);
+  ctx.lineTo(b[0]+n[0]*rb,b[1]+n[1]*rb);
+  ctx.arc(b[0],b[1],rb,au+Math.PI/2,au-Math.PI/2,true);
+  ctx.lineTo(a[0]-n[0]*ra,a[1]-n[1]*ra);
+  ctx.arc(a[0],a[1],ra,au-Math.PI/2,au-Math.PI*1.5,true);
+  ctx.closePath();
+}
+// light comes from the upper left
+function sideGrad(ctx,a,b,r,pal){
+  const u=nrm(V(a,b)); let n=[-u[1],u[0]];
+  if(dot(n,[-0.55,-0.83])<0) n=[-n[0],-n[1]];
+  const m=at(a,b,0.5);
+  const g=ctx.createLinearGradient(m[0]+n[0]*r,m[1]+n[1]*r,m[0]-n[0]*r,m[1]-n[1]*r);
+  g.addColorStop(0,pal.light);g.addColorStop(0.42,pal.skin);g.addColorStop(1,pal.shade);
+  return g;
+}
+function limb(ctx,a,b,ra,rb,pal){capsulePath(ctx,a,b,ra,rb);ctx.fillStyle=sideGrad(ctx,a,b,Math.max(ra,rb),pal);ctx.fill();}
+function perpToward(a,b,want){const u=nrm(V(a,b));let n=[-u[1],u[0]];if(dot(n,want)<0)n=[-n[0],-n[1]];return n;}
+// one muscle belly: an ellipse along a→b, shifted sideways; highlighted when trained, otherwise a faint contour
+function belly(ctx,a,b,t,side,off,len,wid,state){
+  const u=nrm(V(a,b)), c=add(at(a,b,t),side,off);
+  ctx.beginPath();ctx.ellipse(c[0],c[1],Math.max(0.5,len),Math.max(0.5,wid),Math.atan2(u[1],u[0]),0,Math.PI*2);
+  if(state){
+    const col=HI[state], g=ctx.createRadialGradient(c[0]-wid*0.35,c[1]-wid*0.45,0.3,c[0],c[1],Math.max(len,wid));
+    g.addColorStop(0,col[0]);g.addColorStop(1,col[1]);ctx.fillStyle=g;ctx.fill();
+    ctx.strokeStyle="rgba(120,25,10,.35)";ctx.lineWidth=0.6;ctx.stroke();
+  }else if(belly.contour){ctx.strokeStyle=BODY.line;ctx.lineWidth=0.6;ctx.stroke();}
+}
+function shortsGrad(ctx,a,b,r){return sideGrad(ctx,a,b,r,{light:BODY.shortsHi,skin:BODY.shorts,shade:"#0E0F11"});}
+function clipTo(ctx,pathFn,draw){ctx.save();pathFn();ctx.clip();draw();ctx.restore();}
+
+function drawFigure(ctx,spec,P,colors,alpha,id){
+  const S=solve(spec,P), front=spec.v==="front", M=muscleState(id);
+  const td=dir(P.t), fwd=[-td[1],td[0]], up=td;
   ctx.save();ctx.globalAlpha=alpha==null?1:alpha;ctx.lineCap="round";ctx.lineJoin="round";
-  const seg=(a,b,w,c,cap)=>{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.lineCap=cap||"round";ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();ctx.lineCap="round";};
-  const dot=(p,r,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(p[0],p[1],r,0,Math.PI*2);ctx.fill();};
-  const td=dir(P.t), fwd=[-td[1],td[0]];
+  const seg=(a,b,w,c)=>{ctx.strokeStyle=c;ctx.lineWidth=w;ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();};
+  const dotAt=(p,r,c)=>{ctx.fillStyle=c;ctx.beginPath();ctx.arc(p[0],p[1],r,0,Math.PI*2);ctx.fill();};
+
   // tube first, so the body and hands sit on top of it
   if(spec.tube){
-    const tubeLine=(a,b)=>{const len=Math.hypot(b[0]-a[0],b[1]-a[1]);seg(a,b,Math.max(1.6,3.6-len/55),colors.accent);};
+    const tubeLine=(a,b)=>{const len=Math.hypot(b[0]-a[0],b[1]-a[1]);seg(a,b,Math.max(1.6,3.4-len/60),TUBE);};
     const t=spec.tube, hN=S.armN[2], hF=S.armF[2];
-    if(t.pt){tubeLine(hF,t.pt);tubeLine(hN,t.pt);dot(t.pt,3.4,OUTFIT.handle);}
+    if(t.pt){tubeLine(hF,t.pt);tubeLine(hN,t.pt);dotAt(t.pt,3.4,BODY.handle);}
     else if(t==="feet"){tubeLine(hN,S.footN[1]);tubeLine(hF,S.footF[1]);}
     else if(t==="feetX"){tubeLine(hN,S.footF[1]);tubeLine(hF,S.footN[1]);}
     else if(t==="foot1"){tubeLine(hN,S.footN[1]);tubeLine(hF,S.footN[1]);}
@@ -105,49 +164,118 @@ function drawFigure(ctx,spec,P,colors,alpha){
     else if(t==="hips"){tubeLine(hN,S.hip);}
     else if(t==="neck"){tubeLine(S.footN[1],S.neck);}
   }
-  const leg=(L,F,c)=>{
-    const [hip,knee,ankle]=L;
-    seg(at(hip,knee,0.5),knee,8,c.skin); seg(knee,ankle,7,c.skin);
-    seg(hip,at(hip,knee,0.6),11,c.shorts);
-    const toe=F[1], heel=at(toe,ankle,1.25);
-    seg(heel,toe,6.5,c.shoe); seg(at(heel,toe,0.1),at(heel,toe,0.95),2,c.sole,"butt");
+
+  const leg=(L,F,pal,mirror)=>{
+    const [hip,knee,ankle]=L, toe=F[1];
+    // shin and calf
+    limb(ctx,knee,ankle,5.2,3.0,pal);
+    clipTo(ctx,()=>capsulePath(ctx,knee,ankle,5.2,3.0),()=>{
+      if(front) belly(ctx,knee,ankle,0.35,[0,0],0,9,3.2,M.calves);
+      else{ const back=perpToward(knee,ankle,V(toe,ankle)); belly(ctx,knee,ankle,0.33,back,2.2,8.5,3.4,M.calves); }
+    });
+    // thigh
+    limb(ctx,hip,knee,8.0,5.2,pal);
+    clipTo(ctx,()=>capsulePath(ctx,hip,knee,8.0,5.2),()=>{
+      if(front){
+        belly(ctx,hip,knee,0.55,[0,0],0,11,4.6,M.quads);
+      }else{
+        const ham=perpToward(hip,knee,add(nrm(V(knee,ankle)),fwd,-0.4));
+        const quad=[-ham[0],-ham[1]];
+        belly(ctx,hip,knee,0.55,quad,2.6,11,4.4,M.quads);
+        belly(ctx,hip,knee,0.55,ham,3,10,3.6,M.hamstrings);
+      }
+    });
+    // shorts over the upper thigh
+    capsulePath(ctx,hip,at(hip,knee,0.38),8.3,7.4);ctx.fillStyle=shortsGrad(ctx,hip,at(hip,knee,0.38),8.3);ctx.fill();
+    // glute medius shows on the outer hip in the front view, over the shorts
+    if(front&&M.glutes) belly(ctx,hip,knee,0.06,[mirror?-1:1,0],4.4,5.2,4.2,M.glutes);
+    // shoe
+    const heel=at(toe,ankle,1.3);
+    limb(ctx,heel,toe,2.9,2.6,{light:"#8A919B",skin:BODY.shoe,shade:"#3E444C"});
+    seg(at(heel,toe,0.05),at(heel,toe,0.98),1.3,BODY.sole);
   };
-  const arm=(A,c,handle)=>{
+  const arm=(A,pal,mirror)=>{
     const [sh,el,hand]=A;
-    seg(sh,el,6.5,c.skin); seg(el,hand,5.8,c.skin);
-    seg(sh,at(sh,el,0.42),9.5,c.shirt);
-    if(handle&&spec.tube) dot(hand,4,OUTFIT.handle);
-    dot(hand,3.1,c.skin);
+    // forearm
+    limb(ctx,el,hand,4.0,2.7,pal);
+    clipTo(ctx,()=>capsulePath(ctx,el,hand,4.0,2.7),()=>{ belly(ctx,el,hand,0.32,[0,0],0,7,2.9,M.forearms); });
+    // upper arm with the shoulder cap
+    limb(ctx,sh,el,6.2,4.2,pal);
+    clipTo(ctx,()=>capsulePath(ctx,sh,el,6.2,4.2),()=>{
+      const bendDir=add(nrm(V(el,hand)),front?[0,1]:fwd,0.35);
+      const bi=perpToward(sh,el,bendDir), tri=[-bi[0],-bi[1]];
+      if(front){
+        belly(ctx,sh,el,0.58,[0,0],0,7.5,3.4,M.biceps||M.triceps);
+      }else{
+        belly(ctx,sh,el,0.6,bi,2.2,7.6,3.3,M.biceps);
+        belly(ctx,sh,el,0.6,tri,2.2,8,3.3,M.triceps);
+      }
+      belly(ctx,sh,el,0.06,[0,0],0,7.6,6.4,M.delts);
+    });
+    if(spec.tube) dotAt(hand,3.4,BODY.handle);
+    dotAt(hand,2.6,pal.skin);
   };
   const torso=()=>{
+    const hip=S.hip, top=add(S.neck,up,-6);
     if(front){
-      const p=[-td[1],td[0]], sw=13, hw=9;
-      const top=at(S.neck,S.hip,0.04), bot=S.hip;
-      ctx.fillStyle=OUTFIT.near.shirt;ctx.beginPath();
-      ctx.moveTo(top[0]+p[0]*sw,top[1]+p[1]*sw);ctx.lineTo(top[0]-p[0]*sw,top[1]-p[1]*sw);
-      ctx.lineTo(bot[0]-p[0]*hw,bot[1]-p[1]*hw);ctx.lineTo(bot[0]+p[0]*hw,bot[1]+p[1]*hw);ctx.closePath();ctx.fill();
-      seg([bot[0]-p[0]*8,bot[1]-p[1]*8],[bot[0]+p[0]*8,bot[1]+p[1]*8],7,OUTFIT.near.shorts);
+      const p=[-td[1],td[0]], sw=15.5, hw=10.5, sTop=add(S.neck,up,-1);
+      const path=()=>{ctx.beginPath();ctx.moveTo(sTop[0]+p[0]*sw,sTop[1]+p[1]*sw);ctx.lineTo(sTop[0]-p[0]*sw,sTop[1]-p[1]*sw);
+        ctx.lineTo(hip[0]-p[0]*hw,hip[1]-p[1]*hw);ctx.lineTo(hip[0]+p[0]*hw,hip[1]+p[1]*hw);ctx.closePath();};
+      path();
+      const g=ctx.createLinearGradient(sTop[0]+p[0]*sw,sTop[1],sTop[0]-p[0]*sw,sTop[1]);
+      g.addColorStop(0,NEAR.shade);g.addColorStop(0.3,NEAR.light);g.addColorStop(0.65,NEAR.skin);g.addColorStop(1,NEAR.shade);
+      ctx.fillStyle=g;ctx.fill();
+      belly.contour=true;
+      clipTo(ctx,path,()=>{
+        const c=(t,s,o)=>add(at(hip,sTop,t),p,s*o);
+        const E=(pt,len,wid,st)=>belly(ctx,add(pt,[1,0],-1),add(pt,[1,0],1),0.5,[0,0],0,len,wid,st);
+        E(c(0.8,1,6.4),7.2,5.2,M.chest);E(c(0.8,-1,6.4),7.2,5.2,M.chest);
+        E(c(0.6,1,12),3.2,8.5,M.lats);E(c(0.6,-1,12),3.2,8.5,M.lats);
+        E(c(0.98,1,7.5),4.6,2.6,M.upperback);E(c(0.98,-1,7.5),4.6,2.6,M.upperback);
+        E(c(0.3,1,8.4),2.8,7.5,M.obliques);E(c(0.3,-1,8.4),2.8,7.5,M.obliques);
+        E(c(0.38,1,0),4.2,11,M.abs);
+        if(!M.abs){ctx.strokeStyle=BODY.line;ctx.lineWidth=0.6;[0.28,0.4,0.52].forEach(t=>{const a=c(t,1,3.5),b=c(t,-1,3.5);ctx.beginPath();ctx.moveTo(a[0],a[1]);ctx.lineTo(b[0],b[1]);ctx.stroke();});}
+      });
+      belly.contour=false;
+      // shorts waistband
+      const w1=add(hip,up,6);ctx.fillStyle=BODY.shorts;ctx.beginPath();
+      ctx.moveTo(w1[0]+p[0]*11,w1[1]+p[1]*11);ctx.lineTo(w1[0]-p[0]*11,w1[1]-p[1]*11);ctx.lineTo(hip[0]-p[0]*11.5,hip[1]-p[1]*11.5+2);ctx.lineTo(hip[0]+p[0]*11.5,hip[1]+p[1]*11.5+2);ctx.closePath();ctx.fill();
     }else{
-      dot(S.hip,6.5,OUTFIT.near.shorts);
-      seg(at(S.hip,S.neck,0.12),at(S.hip,S.neck,0.97),15,OUTFIT.near.shirt);
-      seg(S.hip,at(S.hip,S.neck,0.14),13,OUTFIT.near.shorts,"butt");
+      const path=()=>capsulePath(ctx,hip,top,9.2,11.2);
+      limb(ctx,hip,top,9.2,11.2,NEAR);
+      belly.contour=true;
+      clipTo(ctx,path,()=>{
+        const back=[-fwd[0],-fwd[1]];
+        belly(ctx,hip,top,0.92,fwd,5.5,8.5,5.8,M.chest);
+        belly(ctx,hip,top,0.45,fwd,6.4,12,4.2,M.abs);
+        belly(ctx,hip,top,0.4,fwd,0,11,5,M.obliques);
+        belly(ctx,hip,top,0.68,back,3.2,12.5,6,M.lats);
+        belly(ctx,hip,top,1.0,back,5,8,5.5,M.upperback);
+        belly(ctx,hip,top,0.28,back,5.5,7,3.8,M.lowerback);
+        belly(ctx,hip,top,1.05,[0,0],0,6,6,M.delts);
+      });
+      belly.contour=false;
+      // shorts and glutes
+      capsulePath(ctx,add(hip,up,-1),add(hip,up,6),9.6,9.4);ctx.fillStyle=shortsGrad(ctx,add(hip,up,-1),add(hip,up,6),9.6);ctx.fill();
+      if(M.glutes) belly(ctx,add(hip,up,-3),add(hip,up,3),0.5,[-fwd[0],-fwd[1]],4.6,5.6,4.6,M.glutes);
     }
-    seg(S.neck,at(S.neck,S.head,0.55),5,OUTFIT.near.skin);
+    // neck
+    limb(ctx,add(S.neck,up,-3),add(S.neck,up,6),3.4,3.2,NEAR);
   };
   const head=()=>{
     const c=S.head, r=SEG.head;
-    dot(c,r,OUTFIT.near.skin);
+    const g=ctx.createRadialGradient(c[0]-r*0.4,c[1]-r*0.45,1,c[0],c[1],r);
+    g.addColorStop(0,NEAR.light);g.addColorStop(0.55,NEAR.skin);g.addColorStop(1,NEAR.shade);
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(c[0],c[1],r,0,Math.PI*2);ctx.fill();
     const U=Math.atan2(td[1],td[0]);
-    ctx.fillStyle=OUTFIT.hair;ctx.beginPath();
-    if(front){ctx.arc(c[0],c[1],r+0.6,U-Math.PI*0.48,U+Math.PI*0.48);ctx.closePath();}
-    else{ctx.moveTo(c[0],c[1]);ctx.arc(c[0],c[1],r+0.6,U+0.55,U-2.35,true);ctx.closePath();}
+    ctx.fillStyle=BODY.hair;ctx.beginPath();
+    if(front){ctx.arc(c[0],c[1],r+0.3,U-1.05,U+1.05);ctx.closePath();}
+    else{ctx.arc(c[0],c[1],r+0.3,U+0.25,U-1.75,true);ctx.closePath();}
     ctx.fill();
-    if(!front){ // ear and a hint of the face direction
-      const e=[c[0]-fwd[0]*1.5,c[1]-fwd[1]*1.5]; dot(e,2,OUTFIT.far.skin);
-    }
+    if(!front){ const n=add(add(c,fwd,r*0.92),up,-1.2); dotAt(n,1.7,NEAR.skin); }
   };
-  if(front){ leg(S.legF,S.footF,OUTFIT.near); leg(S.legN,S.footN,OUTFIT.near); torso(); head(); arm(S.armF,OUTFIT.near,true); arm(S.armN,OUTFIT.near,true); }
-  else { leg(S.legF,S.footF,OUTFIT.far); arm(S.armF,OUTFIT.far,true); leg(S.legN,S.footN,OUTFIT.near); torso(); head(); arm(S.armN,OUTFIT.near,true); }
+  if(front){ leg(S.legF,S.footF,NEAR,true); leg(S.legN,S.footN,NEAR,false); torso(); head(); arm(S.armF,NEAR,true); arm(S.armN,NEAR,false); }
+  else { leg(S.legF,S.footF,FAR,false); arm(S.armF,FAR,false); leg(S.legN,S.footN,NEAR,false); torso(); head(); arm(S.armN,NEAR,false); }
   ctx.restore();
 }
 function ease(x){return x<.5?2*x*x:1-Math.pow(-2*x+2,2)/2;}
@@ -179,6 +307,6 @@ function paintScene(cv,id,ms,reduced){
   const colors={accent:cssVar("--accent"),stage:cssVar("--stage"),floor:cssVar("--floor"),door:cssVar("--door"),doorEdge:cssVar("--door-edge")};
   ctx.clearRect(0,0,W,H);
   drawStage(ctx,spec,colors);
-  if(reduced){drawFigure(ctx,spec,mix(spec.A,spec.B,1),colors,0.3);drawFigure(ctx,spec,mix(spec.A,spec.B,0),colors,1);return;}
-  drawFigure(ctx,spec,mix(spec.A,spec.B,phase(ms)),colors,1);
+  if(reduced){drawFigure(ctx,spec,mix(spec.A,spec.B,1),colors,0.3,id);drawFigure(ctx,spec,mix(spec.A,spec.B,0),colors,1,id);return;}
+  drawFigure(ctx,spec,mix(spec.A,spec.B,phase(ms)),colors,1,id);
 }

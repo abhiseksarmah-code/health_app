@@ -3,7 +3,7 @@
 A home workout and nutrition app for training with a resistance tube.
 
 - **Plan** – one muscle group per day (chest, back, legs, shoulders, arms, core, rest), with today's session highlighted.
-- **Exercises** – 33 tube exercises by muscle group, each with an animated demo of a figure using a resistance tube and door anchor at home, plus setup, form cues, reps, and a link to home tube-workout videos.
+- **Exercises** – 33 tube exercises by muscle group, each with an animated anatomical figure (trained muscles highlighted) using a resistance tube and door anchor at home, a daily done tick that clears at midnight, plus setup, form cues, reps, and a link to home tube-workout videos.
 - **Nutrition** – log food from a built-in list of ~50 Indian, UAE and gym staples or your own entries, and see protein, carbs and fat against your daily targets. Take a photo of your meal and Claude identifies the foods and estimates the macros.
 
 ## Install on Android

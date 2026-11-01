@@ -65,7 +65,18 @@ header.top p{max-width:46ch}
 .focus{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px}
 .focus span{font-size:.85rem;color:var(--muted)}
 .exlist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
-.exlist li{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:6px 0;border-top:1px dashed var(--line)}
+.exlist li{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:12px;padding:6px 0;border-top:1px dashed var(--line)}
+.tick{width:32px;height:32px;border-radius:50%;border:2px solid var(--line);background:var(--surface);display:grid;place-items:center;cursor:pointer;padding:0;color:transparent;transition:background .15s,border-color .15s}
+.tick:hover{border-color:var(--ok)}
+.tick svg{width:15px;height:15px}
+.tick[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:var(--bg)}
+.exlist li.done .exbtn{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--muted)}
+.progress{font-size:.8rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.progress.all{color:var(--ok);font-weight:600}
+.donebtn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;font-weight:600;cursor:pointer;align-self:flex-start}
+.donebtn svg{width:14px;height:14px}
+.donebtn[aria-pressed="true"]{background:var(--ok);border-color:var(--ok);color:var(--bg)}
+.card-foot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
 .exlist li:first-child{border-top:0}
 .exbtn{background:none;border:0;padding:0;text-align:left;cursor:pointer;color:var(--ink);font-weight:500;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
 .exbtn:hover{text-decoration-color:var(--accent)}
@@ -169,6 +180,8 @@ details summary{cursor:pointer;font-weight:600}
   .keyrow{grid-template-columns:repeat(3,1fr)}
   .keyrow .field{grid-column:1/-1}
   .tab{padding:10px 10px;font-size:1rem}
+  .exlist .tension{font-size:0;gap:2px}
+  .exlist li{gap:10px}
   .photo-box{grid-template-columns:1fr}
   .photo-box img{width:100%;height:160px}
   .det{grid-template-columns:auto 1fr repeat(3,52px)}
@@ -203,7 +216,7 @@ details summary{cursor:pointer;font-weight:600}
     </div>
     <div>
       <h2 style="margin-bottom:8px">7-day plan</h2>
-      <p class="muted" style="margin-bottom:8px">Each day trains one muscle group with extra sets, so it gets a full week to recover. Tap an exercise for its demo, setup and form cues. Every 6th week, do the same plan with a lighter tube to recover.</p>
+      <p class="muted" style="margin-bottom:8px">Each day trains one muscle group with extra sets, so it gets a full week to recover. Tick each exercise as you finish it; ticks clear at midnight. Tap an exercise name for its demo, setup and form cues. Every 6th week, do the same plan with a lighter tube to recover.</p>
       <div class="week" id="week"></div>
     </div>
   </section>
@@ -432,25 +445,73 @@ matchMedia("(prefers-color-scheme: dark)").addEventListener("change",repaintStat
 reducedMQ.addEventListener("change",repaintStatic);
 new MutationObserver(repaintStatic).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
 
+/* daily done ticks: one list per calendar day, cleared when the date changes */
+const DONE_KEY="tf-done";
+const todayKey=()=>{const d=new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");};
+let doneState={date:todayKey(),ids:[]};
+try{ const x=JSON.parse(localStorage.getItem(DONE_KEY)); if(x&&x.date===todayKey()&&Array.isArray(x.ids)) doneState={date:x.date,ids:x.ids.map(String)}; }catch(e){}
+let doneSync=null; // set once the account store connects (claude.ai version)
+const isDone=id=>doneState.date===todayKey()&&doneState.ids.includes(id);
+function saveDone(){ try{ localStorage.setItem(DONE_KEY,JSON.stringify(doneState)); }catch(e){} if(doneSync) doneSync(doneState); }
+function setDone(id,on){
+  rollDay();
+  const ids=new Set(doneState.ids); if(on) ids.add(id); else ids.delete(id);
+  doneState={date:todayKey(),ids:[...ids]}; saveDone(); refreshDone();
+}
+let shownDay=todayKey();
+function rollDay(){
+  const k=todayKey(); if(k===shownDay) return;
+  shownDay=k; doneState={date:k,ids:[]}; saveDone(); renderWeek();
+}
+setInterval(rollDay,60000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) rollDay(); });
+const CHECK_SVG='<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 8.5l3.2 3.2L13 4.8" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function tickBtn(id){
+  const b=el("button",{class:"tick",type:"button","data-done":id,"aria-pressed":String(isDone(id)),"aria-label":"Mark "+exById[id].n+" done today"});
+  b.innerHTML=CHECK_SVG; b.onclick=()=>setDone(id,!isDone(id)); return b;
+}
+function doneBtn(id){
+  const b=el("button",{class:"donebtn",type:"button","data-done":id,"aria-pressed":String(isDone(id))});
+  b.onclick=()=>setDone(id,!isDone(id)); paintDoneBtn(b,id); return b;
+}
+function paintDoneBtn(b,id){ const on=isDone(id); b.innerHTML=(on?CHECK_SVG:"")+"<span></span>"; b.lastChild.textContent=on?"Done today":"Mark done"; }
+function refreshDone(){
+  document.querySelectorAll("[data-done]").forEach(b=>{
+    const id=b.dataset.done, on=isDone(id); b.setAttribute("aria-pressed",String(on));
+    if(b.classList.contains("donebtn")) paintDoneBtn(b,id);
+    const li=b.closest("li"); if(li) li.classList.toggle("done",on);
+  });
+  document.querySelectorAll(".progress[data-day]").forEach(p=>{
+    const ids=PLAN[+p.dataset.day].x.map(x=>x[0]), n=ids.filter(isDone).length;
+    p.textContent = n===ids.length ? "All done ✓" : n+" of "+ids.length+" done";
+    p.classList.toggle("all",n===ids.length);
+  });
+}
+
 /* plan */
-const todayIdx = (new Date().getDay()+6)%7;
 const week = document.getElementById("week");
-PLAN.forEach((p,i)=>{
-  const body = el("div",{class:"daybody"},
-    el("div",{class:"focus"}, el("h3",{},p.f), p.dur?el("span",{},p.dur):null));
-  if(p.x){
-    const ul=el("ul",{class:"exlist"});
-    p.x.forEach(([id,sets])=>{
-      const e=exById[id];
-      ul.append(el("li",{}, el("button",{class:"exbtn",type:"button",onclick:()=>openEx(id)},e.n), tension(e.t), el("span",{class:"sets"},sets)));
-    });
-    body.append(ul);
-  } else {
-    body.append(el("ul",{class:"notes"}, p.notes.map(t=>el("li",{},t))));
-  }
-  week.append(el("div",{class:"day"+(i===todayIdx?" today":"")},
-    el("div",{class:"dayname"},p.d, i===todayIdx?el("small",{},"TODAY"):null), body));
-});
+function renderWeek(){
+  const todayIdx=(new Date().getDay()+6)%7;
+  week.innerHTML="";
+  PLAN.forEach((p,i)=>{
+    const body = el("div",{class:"daybody"},
+      el("div",{class:"focus"}, el("h3",{},p.f), p.dur?el("span",{},p.dur):null, p.x?el("span",{class:"progress","data-day":String(i)}):null));
+    if(p.x){
+      const ul=el("ul",{class:"exlist"});
+      p.x.forEach(([id,sets])=>{
+        const e=exById[id];
+        ul.append(el("li",{}, tickBtn(id), el("button",{class:"exbtn",type:"button",onclick:()=>openEx(id)},e.n), tension(e.t), el("span",{class:"sets"},sets)));
+      });
+      body.append(ul);
+    } else {
+      body.append(el("ul",{class:"notes"}, p.notes.map(t=>el("li",{},t))));
+    }
+    week.append(el("div",{class:"day"+(i===todayIdx?" today":"")},
+      el("div",{class:"dayname"},p.d, i===todayIdx?el("small",{},"TODAY"):null), body));
+  });
+  refreshDone();
+}
+renderWeek();
 
 /* library */
 let activeGroup="all";
@@ -475,11 +536,12 @@ function exCard(e){
     el("div",{class:"setup"}, el("b",{},"Setup: "), e.a),
     el("ol",{}, e.s.map(s=>el("li",{},s))),
     el("div",{class:"meta"}, el("span",{},"Reps ",el("b",{},e.r)), el("span",{},"Works ",el("b",{},e.m))),
-    videoLink(e));
+    el("div",{class:"card-foot"}, doneBtn(e.id), videoLink(e)));
 }
 function renderGrid(){
   grid.innerHTML="";
   EX.filter(e=>activeGroup==="all"||e.g===activeGroup).forEach(e=>grid.append(exCard(e)));
+  refreshDone();
 }
 renderChips(); renderGrid();
 
@@ -492,7 +554,7 @@ function openEx(id){
   document.getElementById("mTitle").textContent=e.n;
   const b=document.getElementById("mBody"); b.innerHTML="";
   b.append(demoCanvas(id), tension(e.t), el("div",{class:"setup"},el("b",{},"Setup: "),e.a), el("ol",{style:"margin:0;padding-left:18px"},e.s.map(s=>el("li",{},s))),
-    el("div",{class:"meta"}, el("span",{},"Reps ",el("b",{},e.r)), el("span",{},"Works ",el("b",{},e.m))), videoLink(e));
+    el("div",{class:"meta"}, el("span",{},"Reps ",el("b",{},e.r)), el("span",{},"Works ",el("b",{},e.m))), el("div",{class:"card-foot"}, doneBtn(id), videoLink(e)));
   overlay.hidden=false; document.getElementById("mClose").focus();
 }
 function closeEx(){ overlay.hidden=true; lastFocus&&lastFocus.focus(); }
@@ -976,6 +1038,12 @@ function showDetections(res){
       else if(lsGet("tf-targets")) saveTargets();
     }catch(e){}
     loadDay();
+    try{
+      const ds=await db.collection("data/users/"+uid).doc("done").get();
+      if(ds.exists){ const x=ds.data(); if(x&&x.date===todayKey()&&Array.isArray(x.ids)){ doneState={date:x.date,ids:[...new Set([...doneState.ids,...x.ids.map(String)])]}; try{ localStorage.setItem(DONE_KEY,JSON.stringify(doneState)); }catch(e){} refreshDone(); } }
+    }catch(e){}
+    doneSync=st=>dbWrite("done",{date:st.date,ids:st.ids});
+    if(doneState.ids.length) doneSync(doneState);
   }catch(e){ setStatus("Saved on this device"); }
 })();
 </script>
